@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# TUI smoke: php hmx inside tmux, send keys, assert on captured text (testing.md §2)
+# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2)
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
+bin="${HMX_BIN:-./hmx}"
 status=0
 
 keys() { tmux send-keys -t hmxtest "$@"; sleep 0.4; }
@@ -14,7 +15,7 @@ run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
 	tmux kill-session -t hmxtest 2>/dev/null
-	tmux new-session -d -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmx --map-dir=$d${4:-} ${2:+$d/$2}"
+	tmux new-session -d -c "$repo" -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
 	sleep 0.6
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
 	tmux kill-session -t hmxtest 2>/dev/null

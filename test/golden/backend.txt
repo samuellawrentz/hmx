@@ -1,0 +1,39 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                ╭── JWT rotation …
+                 ╭── auth ──────┤
+   backend ──────┤              ╰── refresh
+                 │
+                 ╰── [[infra#redis]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

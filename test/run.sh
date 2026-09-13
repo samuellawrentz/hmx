@@ -3,7 +3,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-php -l hmx
+php -l ref/hmx.php
 
 status=0
 for f in test/test_*.php; do
