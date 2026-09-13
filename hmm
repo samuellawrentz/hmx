@@ -621,6 +621,23 @@ function list_to_map($lines, $root_id, $start_id)
 	foreach ($lines as $line)
 		if (trim($line)!='')
 		{
+			$stripped = ltrim($line);
+			$sigil    = mb_substr($stripped,0,2);
+
+			if ($sigil=='> ' || $stripped=='>')
+			{
+				if ($id > $start_id)
+				{
+					$text = mb_substr($stripped, $sigil=='> ' ? 2 : 1);
+					$nodes[$id-1]['body'] =
+						isset($nodes[$id-1]['body'])
+						? $nodes[$id-1]['body']."\n".$text
+						: $text
+					;
+				}
+				continue;
+			}
+
 			// warming up for this round!
 			$indentation = mb_strlen($line) - mb_strlen(ltrim($line)) - $indentation_shift;
 
@@ -682,7 +699,13 @@ function list_to_map($lines, $root_id, $start_id)
 function map_to_list(&$mm, $id, $exclude_parent = false, $base = 0)
 {
 	if (!$exclude_parent)
+	{
 		$output = str_repeat("\t",$base).$mm['nodes'][$id]['title'].PHP_EOL;
+
+		if (($mm['nodes'][$id]['body'] ?? '') !== '')
+			foreach (explode("\n", $mm['nodes'][$id]['body']) as $line)
+				$output .= str_repeat("\t",$base).'> '.$line.PHP_EOL;
+	}
 	else
 		$output = '';
 
@@ -692,6 +715,20 @@ function map_to_list(&$mm, $id, $exclude_parent = false, $base = 0)
 	return $output;
 }
 
+
+// }}}
+// {{{ map node count
+
+function map_node_count($filename)
+{
+	$count = 0;
+
+	foreach (file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line)
+		if (mb_substr(ltrim($line),0,1) != '>')
+			$count++;
+
+	return($count);
+}
 
 // }}}
 // {{{ load file
