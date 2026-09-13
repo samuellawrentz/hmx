@@ -129,6 +129,7 @@ config($mm, 'echo_keys',             false);
 
 config($mm, 'map_dir',               getenv('HOME').'/maps');
 config($mm, 'link_color',            "\033[38;5;33m");
+config($mm, 'body_marker_color',     "\033[38;5;214m");
 
 
 if (isset($mm['arguments']['debug_config']))
@@ -755,6 +756,7 @@ function list_visible_children(&$mm, $id)
 function calculate_x_and_lh(&$mm, $id)
 {
 	$node = $mm['nodes'][$id];
+	$title = $node['title'].(($node['body'] ?? '') !== '' ? ' …' : '');
 
 
 	$mm['nodes'][$id]['x'] =
@@ -783,9 +785,9 @@ function calculate_x_and_lh(&$mm, $id)
 		: $mm['max_parent_node_width']
 	;
 
-	if ( mb_strlen($node['title']) > width_tolerance * $max_width )
+	if ( mb_strlen($title) > width_tolerance * $max_width )
 	{
-		$lines = explode(PHP_EOL ,wordwrap($node['title'] ,$max_width, PHP_EOL));
+		$lines = explode(PHP_EOL ,wordwrap($title ,$max_width, PHP_EOL));
 
 		$mm['nodes'][$id]['w'] = 0;
 		$mm['nodes'][$id]['wl'] = 0;
@@ -799,8 +801,8 @@ function calculate_x_and_lh(&$mm, $id)
 	}
 	else
 	{
-		$mm['nodes'][$id]['w']  = mb_strwidth(trim($node['title']));
-		$mm['nodes'][$id]['wl'] = mb_strlen(trim($node['title']));
+		$mm['nodes'][$id]['w']  = mb_strwidth(trim($title));
+		$mm['nodes'][$id]['wl'] = mb_strlen(trim($title));
 		$mm['nodes'][$id]['lh'] = 1;
 	}
 
@@ -1252,6 +1254,7 @@ function calculate_xo(&$mm)
 function add_content_to_the_map(&$mm, $id)
 {
 	$node = $mm['nodes'][$id];
+	$title = $node['title'].(($node['body'] ?? '') !== '' ? ' …' : '');
 
 	$at_the_end =
 		$node['is_leaf']
@@ -1265,21 +1268,21 @@ function add_content_to_the_map(&$mm, $id)
 		: $mm['max_parent_node_width']
 	;
 
-	if ( mb_strlen($node['title']) > width_tolerance * $max_width)
+	if ( mb_strlen($title) > width_tolerance * $max_width)
 		$lines =
 			explode
 			(
 				PHP_EOL,
 				wordwrap
 				(
-					$node['title']
+					$title
 					,$max_width
 					,PHP_EOL
 				)
 			)
 		;
 	else
-		$lines = [$node['title']];
+		$lines = [$title];
 
 	$num_lines = count($lines);
 	for ( $i=0 ; $i<$num_lines ; $i++ )
@@ -2180,6 +2183,8 @@ function help()
 			."\n"
 		;
 	echo "\n";
+
+	echo "\nlist screen: j/k move, Enter open, n new, r rename, d delete, / filter, q quit\n";
 
 	message($mm, "Press any key to exit this help screen.");
 
@@ -3465,9 +3470,12 @@ function display(&$mm, $force_center = false)
 
 	// building the output
 
+	$body = $mm['nodes'][$mm['active_node']]['body'] ?? '';
+	$rows = $body === '' ? $mm['terminal_height'] : (int)($mm['terminal_height'] * 0.7);
+
 	$output = '';
 
-	for ( $y = 0 ; $y < $mm['terminal_height'] ; $y++ )
+	for ( $y = 0 ; $y < $rows ; $y++ )
 	{
 		if (isset($mm['map'][$y+$mm['viewport_top']]))
 			$line =
@@ -3585,6 +3593,10 @@ function display(&$mm, $force_center = false)
 				,$line
 			);
 
+		// styling the "…" body marker
+
+		$line = str_replace('…', $mm['body_marker_color'].'…'.default_color, $line);
+
 		// styling "{meta}"s
 
 		$line =
@@ -3609,6 +3621,19 @@ function display(&$mm, $force_center = false)
 
 
 	echo reset_page.reset_color.$output;
+
+	// showing the body pane
+
+	if ($body !== '')
+	{
+		$sep_row = $rows + 1;
+		echo "\033[{$sep_row};1f".line_on.str_repeat('─', $mm['terminal_width']).line_off;
+
+		$body_lines = explode("\n", $body);
+		$last_row   = $mm['terminal_height'] - 1;
+		for ($i = 0; $i < count($body_lines) && $sep_row + 1 + $i <= $last_row; $i++)
+			echo "\033[".($sep_row + 1 + $i).";1f".mb_strimwidth($body_lines[$i], 0, $mm['terminal_width'], '');
+	}
 
 	// showing the breadcrumb
 
@@ -4008,7 +4033,32 @@ function extract_to_map()
 function edit_body()
 {
 	global $mm;
-	message($mm, 'edit_body: not implemented yet');
+
+	$id = $mm['active_node'];
+	$n  = $mm['nodes'][$id];
+
+	$tmp = tempnam(sys_get_temp_dir(), 'hmm').'.md';
+	file_put_contents($tmp, $n['title']."\n\n".($n['body'] ?? '')."\n");
+
+	echo "\033[?1049l\033[?25h";
+	system('stty sane');
+	passthru((getenv('EDITOR') ?: 'vi').' '.escapeshellarg($tmp));
+	enable_alternate_screen();
+
+	$lines = explode("\n", rtrim(file_get_contents($tmp)));
+	$title = trim(array_shift($lines));
+	$body  = trim(implode("\n", $lines));
+	unlink($tmp);
+
+	if ($title === '')
+		$title = $n['title'];
+
+	push_change($mm);
+	$mm['nodes'][$id]['title'] = $title;
+	$mm['nodes'][$id]['body']  = $body;
+
+	build_map($mm);
+	display($mm);
 }
 
 function list_rows($filter)

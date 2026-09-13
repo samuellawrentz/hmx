@@ -14,7 +14,7 @@ run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
 	tmux kill-session -t hmmtest 2>/dev/null
-	tmux new-session -d -s hmmtest -x 100 -y 30 "php $repo/hmm --map-dir=$d ${2:+$d/$2}"
+	tmux new-session -d -s hmmtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmm --map-dir=$d ${2:+$d/$2}"
 	sleep 0.6
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
 	tmux kill-session -t hmmtest 2>/dev/null
@@ -60,9 +60,19 @@ list_screen()
 	has redis postgres
 }
 
+# E on JWT rotation: '…' marker in tree, body pane shows the existing + appended line
+body_edit()
+{
+	keys l; keys l
+	keys E
+	sleep 0.8
+	has '…' 'Rotate every 24h.' 'added line'
+}
+
 run open_map        backend.hmm open_map
 run follow_and_back backend.hmm follow_and_back
 run enter_on_plain  backend.hmm enter_on_plain
 run list_screen     backend.hmm list_screen
 run extract         backend.hmm extract
+EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hmm body_edit
 exit $status
