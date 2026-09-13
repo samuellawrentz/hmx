@@ -54,17 +54,7 @@ for ( $i = 1 ; $i < $alen ; $i++ )
 
 $conf =
 	$mm['arguments']['config']
-	??
-	(
-		PHP_OS_FAMILY === 'Windows'
-		? $argv[0].'.conf'
-		:
-		(
-			PHP_OS_FAMILY === 'Darwin'
-			? getenv('HOME').'/Library/Preferences/h-m-m/h-m-m.conf'
-			: getenv('HOME').'/.config/h-m-m/h-m-m.conf'
-		)
-	)
+	?? (getenv('XDG_CONFIG_HOME') ?: getenv('HOME').'/.config').'/hmx/config'
 ;
 
 if (file_exists($conf))
@@ -3839,7 +3829,7 @@ function replace_stars($text,$stars)
 
 
 // }}}
-// {{{ hmm additions
+// {{{ hmx additions
 
 function enter_key()
 {
@@ -4120,7 +4110,7 @@ function edit_body()
 	$id = $mm['active_node'];
 	$n  = $mm['nodes'][$id];
 
-	$tmp = tempnam(sys_get_temp_dir(), 'hmm').'.md';
+	$tmp = tempnam(sys_get_temp_dir(), 'hmx').'.md';
 	file_put_contents($tmp, $n['title']."\n\n".($n['body'] ?? '')."\n");
 
 	run_in_tty((getenv('EDITOR') ?: 'vi').' '.escapeshellarg($tmp));
@@ -4322,14 +4312,14 @@ function monitor_key_presses(&$mm)
 
 function change_window_title($title)
 {
-	echo "\033]2;".( $title == '' ? ' ' : 'h-m-m -- '.str_replace('.hmm','',basename($title)) )."\007";
+	echo "\033]2;".( $title == '' ? ' ' : 'hmx -- '.str_replace('.hmm','',basename($title)) )."\007";
 }
 
 
 // }}}
 // {{{ main
 
-if (!defined('HMM_TEST')) {
+if (!defined('HMX_TEST')) {
 	check_required_extensions();
 	check_the_available_clipboard_tool($mm);
 

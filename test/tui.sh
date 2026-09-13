@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# TUI smoke: php hmm inside tmux, send keys, assert on captured text (testing.md §2)
+# TUI smoke: php hmx inside tmux, send keys, assert on captured text (testing.md §2)
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 status=0
 
-keys() { tmux send-keys -t hmmtest "$@"; sleep 0.4; }
-screen() { tmux capture-pane -t hmmtest -p; }
+keys() { tmux send-keys -t hmxtest "$@"; sleep 0.4; }
+screen() { tmux capture-pane -t hmxtest -p; }
 has() { local s; s=$(screen); for n in "$@"; do grep -qF -- "$n" <<<"$s" || { echo "  missing: $n"; echo "$s"; return 1; }; done; }
 lacks() { screen | grep -qF -- "$1" && { echo "  unexpected: $1"; return 1; }; return 0; }
 
-# run <name> <file-or-empty> <body-fn>: fresh map_dir with fixtures, hmm in tmux, kill after
+# run <name> <file-or-empty> <body-fn>: fresh map_dir with fixtures, hmx in tmux, kill after
 run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
-	tmux kill-session -t hmmtest 2>/dev/null
-	tmux new-session -d -s hmmtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmm --map-dir=$d${4:-} ${2:+$d/$2}"
+	tmux kill-session -t hmxtest 2>/dev/null
+	tmux new-session -d -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmx --map-dir=$d${4:-} ${2:+$d/$2}"
 	sleep 0.6
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
-	tmux kill-session -t hmmtest 2>/dev/null
+	tmux kill-session -t hmxtest 2>/dev/null
 }
 
 open_map() { has backend auth '[[infra#redis]]'; }

@@ -1,7 +1,7 @@
 <?php
-define('HMM_TEST', true);
-$argv = ['hmm'];
-require __DIR__.'/../hmm';
+define('HMX_TEST', true);
+$argv = ['hmx'];
+require __DIR__.'/../hmx';
 
 function check($cond, $msg)
 {

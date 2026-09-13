@@ -84,4 +84,4 @@ title becomes the task description, task gets annotation `map: <map>#<node>`. `n
 `T` marks done. Writes use uuid + `rc.confirmation=off rc.bulk=0 rc.verbose=nothing`.
 
 ## Config
-`map_dir` (default `~/maps`). Everything cut from the keymap is bindable via the existing h-m-m config file.
+`map_dir` (default `~/maps`). Everything cut from the keymap is bindable via the config file (`~/.config/hmx/config`, or `$XDG_CONFIG_HOME/hmx/config`).

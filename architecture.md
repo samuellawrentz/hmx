@@ -59,4 +59,4 @@ sequenceDiagram
 - `$mm['nodes']` holds exactly one map. Never two.
 - The file on disk is the truth. Task status, link targets, node counts are recomputed on load, never cached.
 - Every write to disk goes through `save()`. Extract and rename are the only functions that write other files.
-- Taskwarrior is read-only until stage B. hmm never mutates task state in stage A.
+- Taskwarrior is read-only until stage B. hmx never mutates task state in stage A.

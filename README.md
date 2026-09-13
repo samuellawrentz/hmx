@@ -1,4 +1,4 @@
-# hmm
+# hmx
 
 Terminal mind maps. Many maps, one folder, plain text, links between them. Fork of [h-m-m](https://github.com/nadrad/h-m-m).
 

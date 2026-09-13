@@ -1,6 +1,6 @@
 # Foundations
 
-What hmm is, what it is not, and the rules every change is checked against.
+What hmx is, what it is not, and the rules every change is checked against.
 
 ## Purpose
 A keyboard-only terminal mind mapper for one person, many maps. Fork of h-m-m.
@@ -12,7 +12,7 @@ Maps are plain text in one folder, synced with git.
 3. **Links are text.** `[[map]]`, `[[map#node]]`, `[[task:uuid8]]`. Grep is the backlink engine.
 4. **Fewest keys.** 23 defaults. A cut key returns only as a user config binding.
 5. **No editor inside the editor.** Bodies go to `$EDITOR`.
-6. **Sync is git.** hmm never talks to a network.
+6. **Sync is git.** hmx never talks to a network.
 7. **Shortest diff wins** once the problem is understood. Ask "does this need to exist" before "how".
 
 ## Out of scope

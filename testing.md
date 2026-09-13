@@ -3,7 +3,7 @@
 Three levels. Cheap first. Every phase must pass level 1; UI phases also level 2.
 
 ## 1. Unit (`bash test/run.sh`)
-PHP includes `hmm` with `HMM_TEST` defined so the main loop never starts, then calls functions directly.
+PHP includes `hmx` with `HMX_TEST` defined so the main loop never starts, then calls functions directly.
 Fixtures are real `.hmm` files in `test/fixtures/` with real tabs. Never build fixtures from strings with spaces.
 
 | area | check |
@@ -18,12 +18,12 @@ Fixtures are real `.hmm` files in `test/fixtures/` with real tabs. Never build f
 | task status | `task export` JSON fixture → ☐ / ☑ / overdue; missing `task` binary → plain render |
 
 ## 2. TUI smoke (`bash test/tui.sh`, tmux)
-Run `php hmm` inside a detached tmux pane of fixed size, send keys, capture the screen, assert on text.
+Run `php hmx` inside a detached tmux pane of fixed size, send keys, capture the screen, assert on text.
 ```
-tmux new-session -d -s hmmtest -x 100 -y 30 "php hmm /tmp/t/backend.hmm"
-tmux send-keys -t hmmtest j j Enter        # move, follow link
+tmux new-session -d -s hmxtest -x 100 -y 30 "php hmm /tmp/t/backend.hmm"
+tmux send-keys -t hmxtest j j Enter        # move, follow link
 sleep 0.3
-tmux capture-pane -t hmmtest -p | grep -q "infra"   # breadcrumb / target map rendered
+tmux capture-pane -t hmxtest -p | grep -q "infra"   # breadcrumb / target map rendered
 ```
 Scenarios, one function each, temp `map_dir` per run:
 1. open map → root and children rendered, `[[..]]` node present
@@ -42,7 +42,7 @@ Golden text, not golden screenshots. Assert on 1–2 strings per scenario.
 - After phase 7: link 2 real tasks, mark one done in `twt`, reopen the map, confirm ☑.
 
 ## Gates per phase
-`php -l hmm` · `bash test/run.sh` · `bash test/tui.sh` (phases 2–7) · manual 30-second run on the example map, described in the commit message body.
+`php -l hmx` · `bash test/run.sh` · `bash test/tui.sh` (phases 2–7) · manual 30-second run on the example map, described in the commit message body.
 
 ## Not testing
 Rendering geometry (upstream's job), colours, terminal resize, performance.

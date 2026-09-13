@@ -3,15 +3,15 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-php -l hmm
+php -l hmx
 
 status=0
 for f in test/test_*.php; do
-	if php "$f" > /tmp/hmm_test_out 2>&1; then
+	if php "$f" > /tmp/hmx_test_out 2>&1; then
 		echo "PASS $f"
 	else
 		echo "FAIL $f"
-		cat /tmp/hmm_test_out
+		cat /tmp/hmx_test_out
 		status=1
 	fi
 done
