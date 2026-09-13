@@ -48,6 +48,8 @@ var actions = map[string]func(*App){
 	"previous_search_result": func(a *App) { previousSearchResult(a) },
 	"enter_key":              enterKey,
 	"go_back":                (*App).goBack,
+	"edit_body":              (*App).editBody,
+	"extract_to_map":         extractToMap,
 }
 
 var mapKeys = map[string]string{
@@ -70,6 +72,8 @@ var mapKeys = map[string]string{
 	"o":          "insert_new_sibling",
 	"Tab":        "insert_new_child",
 	"e":          "edit_node",
+	"E":          "edit_body",
+	"Ctrl-E":     "extract_to_map",
 	"d":          "delete_node",
 	"y":          "yank_node",
 	"p":          "paste_as_children",

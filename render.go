@@ -30,10 +30,19 @@ func (a *App) draw() {
 
 	query := []rune(strings.ToLower(a.query))
 
-	for y := 0; y < h; y++ {
+	rows := h
+	if node.Body != "" {
+		rows = int(float64(h) * 0.7)
+	}
+
+	for y := 0; y < rows; y++ {
 		row := rowAt(a.m, y, w)
 		styles := styleRow(row, y, x1, x2, y1, y2, query)
 		putRow(a.s, 0, y, row, styles)
+	}
+
+	if node.Body != "" {
+		a.drawBodyPane(node.Body, rows, w, h)
 	}
 
 	if bc := a.breadcrumb(); bc != "" {
@@ -42,6 +51,22 @@ func (a *App) draw() {
 
 	putMessage(a.s, w, h, a.msg)
 	a.s.Show()
+}
+
+// drawBodyPane ports the body pane in display(), ref/hmx.php 3625-3637: a
+// separator at row `rows`, then body text up to the row above the message line.
+func (a *App) drawBodyPane(body string, rows, w, h int) {
+	putStr(a.s, 0, rows, strings.Repeat("─", w), tcell.StyleDefault.Foreground(tcell.PaletteColor(95)))
+	for i, line := range strings.Split(body, "\n") {
+		y := rows + 1 + i
+		if y > h-2 {
+			break
+		}
+		if r := []rune(line); len(r) > w {
+			line = string(r[:w])
+		}
+		putStr(a.s, 0, y, line, tcell.StyleDefault)
+	}
 }
 
 // rowAt slices m.rows the same way Map.Screen does, padded to w runes.

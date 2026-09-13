@@ -16,7 +16,7 @@ run()
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
 	tmux kill-session -t hmxtest 2>/dev/null
 	tmux new-session -d -c "$repo" -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
-	sleep 1
+	for _ in $(seq 50); do screen | grep -q '[^[:space:]]' && break; sleep 0.1; done   # first exec of a fresh build is slow on macOS
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
 	tmux kill-session -t hmxtest 2>/dev/null
 }
