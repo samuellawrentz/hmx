@@ -3857,11 +3857,16 @@ function show_task($uuid)
 		return;
 	}
 
+	run_in_tty('task rc.context=none '.escapeshellarg($uuid).' info | '.(getenv('PAGER') ?: 'less'));
+	display($mm);
+}
+
+function run_in_tty($cmd)
+{
 	echo "\033[?1049l\033[?25h";
 	system('stty sane');
-	passthru('task rc.context=none '.escapeshellarg($uuid).' info | '.(getenv('PAGER') ?: 'less'));
+	passthru($cmd.(posix_isatty(STDOUT) ? ' >/dev/tty' : ''));
 	enable_alternate_screen();
-	display($mm);
 }
 
 function node_text($mm, $node)
@@ -4114,10 +4119,7 @@ function edit_body()
 	$tmp = tempnam(sys_get_temp_dir(), 'hmm').'.md';
 	file_put_contents($tmp, $n['title']."\n\n".($n['body'] ?? '')."\n");
 
-	echo "\033[?1049l\033[?25h";
-	system('stty sane');
-	passthru((getenv('EDITOR') ?: 'vi').' '.escapeshellarg($tmp));
-	enable_alternate_screen();
+	run_in_tty((getenv('EDITOR') ?: 'vi').' '.escapeshellarg($tmp));
 
 	$lines = explode("\n", rtrim(file_get_contents($tmp)));
 	$title = trim(array_shift($lines));
