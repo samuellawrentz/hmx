@@ -3945,11 +3945,10 @@ function load_map($file)
 
 	$mm['arguments']['filename'] = $file;
 	load_file($mm);
+	load_tasks($mm);
 
 	collapse_all($mm);
 	collapse_level($mm, $mm['initial_depth'], false);
-
-	load_tasks($mm);
 }
 
 function go_to_node($id)
