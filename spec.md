@@ -53,7 +53,7 @@ bottom pane shows the body when the active node has one.
 
 ## Extract (`ctrl+e`)
 - Key = `<parent-map>-<slug(title)>`. Same key for filename, `[[link]]`, root title. Prompt allows override.
-- Existing file → refuse, ask another name.
+- Existing file → refuses with a message.
 - Subtree written via the existing serializer, node title replaced by `[[key]]`, children dropped. Undo covers the tree change, not the file.
 - Reverse is manual: open child, `y` root, Backspace, `p`, delete link node.
 

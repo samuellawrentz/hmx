@@ -13,7 +13,7 @@ Fixtures are real `.hmm` files in `test/fixtures/` with real tabs. Never build f
 | node count | skips body lines |
 | links | `[[a]]`, `[[a#b c]]`, `[[task:1a2b3c4d]]` parsed from title first, then body; no link → null |
 | extract | key = `<map>-<slug>`; both files reload; parent node title is `[[key]]` with no children; existing target refused |
-| rename | `[[old` → `[[new` rewritten only inside `[[..]]`, across every map in a temp dir; file list reported |
+| rename | `[[old` → `[[new` rewritten only inside `[[..]]`, across every map in a temp dir; count reported |
 | keymap | exactly the 23 default map keys and 7 list keys are bound; every bound function exists |
 | task status | `task export` JSON fixture → ☐ / ☑ / overdue; missing `task` binary → plain render |
 

@@ -14,7 +14,7 @@ run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
 	tmux kill-session -t hmmtest 2>/dev/null
-	tmux new-session -d -s hmmtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmm --map-dir=$d ${2:+$d/$2}"
+	tmux new-session -d -s hmmtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }php $repo/hmm --map-dir=$d${4:-} ${2:+$d/$2}"
 	sleep 0.6
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
 	tmux kill-session -t hmmtest 2>/dev/null
@@ -69,10 +69,14 @@ body_edit()
 	has '…' 'Rotate every 24h.' 'added line'
 }
 
+# missing map_dir is created and the empty list renders
+no_map_dir() { [ -d "$1/new" ] && has 'maps in' 'no maps'; }
+
 run open_map        backend.hmm open_map
 run follow_and_back backend.hmm follow_and_back
 run enter_on_plain  backend.hmm enter_on_plain
 run list_screen     backend.hmm list_screen
 run extract         backend.hmm extract
 EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hmm body_edit
+run no_map_dir      ''          no_map_dir /new
 exit $status
