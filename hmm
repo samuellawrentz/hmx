@@ -3584,29 +3584,34 @@ function display(&$mm, $force_center = false)
 				,$line
 			);
 
-		// styling "[[task:uuid]]" links, red when overdue
+		// links and the body marker: skipped on the active rows, a colour reset would cut the highlight
 
-		$line =
-			preg_replace_callback
-			(
-				 '/\[\[task:([0-9a-z]{8})\]\]/'
-				,fn($m) => (($mm['tasks'][$m[1]]['overdue'] ?? false) ? $mm['overdue_color'] : $mm['link_color']).$m[0].default_color
-				,$line
-			);
+		if ($y < $y1 || $y >= $y2)
+		{
+			// styling "[[task:uuid]]" links, red when overdue
 
-		// styling "[[links]]"
+			$line =
+				preg_replace_callback
+				(
+					 '/\[\[task:([0-9a-z]{8})\]\]/'
+					,fn($m) => (($mm['tasks'][$m[1]]['overdue'] ?? false) ? $mm['overdue_color'] : $mm['link_color']).$m[0].default_color
+					,$line
+				);
 
-		$line =
-			mb_ereg_replace
-			(
-				 '(\[\[(?!task:)[^\]]*\]\])'
-				,$mm['link_color'].'\\1'.default_color
-				,$line
-			);
+			// styling "[[links]]"
 
-		// styling the "…" body marker
+			$line =
+				mb_ereg_replace
+				(
+					 '(\[\[(?!task:)[^\]]*\]\])'
+					,$mm['link_color'].'\\1'.default_color
+					,$line
+				);
 
-		$line = str_replace('…', $mm['body_marker_color'].'…'.default_color, $line);
+			// styling the "…" body marker
+
+			$line = str_replace('…', $mm['body_marker_color'].'…'.default_color, $line);
+		}
 
 		// styling "{meta}"s
 
