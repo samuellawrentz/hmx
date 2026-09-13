@@ -10,15 +10,16 @@ import (
 )
 
 type App struct {
-	s      tcell.Screen
-	m      *Map
-	cfg    Config
-	mapDir string
-	msg    string
-	query  string
-	clip   string
-	stack  []NavEntry
-	quit   bool
+	s         tcell.Screen
+	m         *Map
+	cfg       Config
+	mapDir    string
+	msg       string
+	query     string
+	listQuery string
+	clip      string
+	stack     []NavEntry
+	quit      bool
 }
 
 type Config map[string]string
@@ -121,11 +122,6 @@ func main() {
 		mapKeys[strings.TrimSpace(k[len("bind"):])] = v
 	}
 
-	if file == "" {
-		fmt.Fprintln(os.Stderr, "usage: hmx [--map-dir=DIR] file.hmm")
-		os.Exit(1)
-	}
-
 	home, _ := os.UserHomeDir()
 	mapDir := cfg.get("map_dir", filepath.Join(home, "maps"))
 	if err := os.MkdirAll(mapDir, 0755); err != nil {
@@ -145,19 +141,35 @@ func main() {
 	defer s.Fini()
 
 	a := &App{s: s, cfg: cfg, mapDir: mapDir}
-	a.openMap(file)
-	a.draw()
 
-	for !a.quit {
-		switch ev := s.PollEvent().(type) {
-		case *tcell.EventResize:
-			a.draw()
-		case *tcell.EventKey:
-			a.msg = ""
-			if fn, ok := actions[mapKeys[keyName(ev)]]; ok {
-				fn(a)
+	for {
+		if file == "" {
+			file = a.listScreen()
+			if file == "" {
+				break
 			}
-			a.draw()
 		}
+		a.openMap(file)
+		if a.listQuery != "" {
+			a.query = a.listQuery
+			a.listQuery = ""
+			nextSearchResult(a)
+		}
+		a.quit = false
+		a.draw()
+
+		for !a.quit {
+			switch ev := s.PollEvent().(type) {
+			case *tcell.EventResize:
+				a.draw()
+			case *tcell.EventKey:
+				a.msg = ""
+				if fn, ok := actions[mapKeys[keyName(ev)]]; ok {
+					fn(a)
+				}
+				a.draw()
+			}
+		}
+		file = ""
 	}
 }

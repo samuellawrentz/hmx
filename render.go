@@ -15,6 +15,9 @@ var (
 
 // draw ports display(), ref/hmx.php 3407-3660: no body pane, no breadcrumb, no logo (phases 5-6).
 func (a *App) draw() {
+	if a.m == nil { // list mode: no map loaded yet, magic_readline's Esc path calls draw()
+		return
+	}
 	w, h := a.s.Size()
 	a.m.MoveWindow(w, h)
 	a.s.Clear()

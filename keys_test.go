@@ -11,6 +11,11 @@ import (
 func TestKeymap(t *testing.T) {
 	want := strings.Fields("h j k l Up Down Left Right Space f 0 1 o Tab e d y p P J K u / n N Enter Backspace Backspace2 s q Ctrl-C ?")
 	check(t, mapKeys, want, 26)
+	for k, name := range mapKeys {
+		if actions[name] == nil {
+			t.Errorf("%q bound to unknown action %q", k, name)
+		}
+	}
 }
 
 func check(t *testing.T, table map[string]string, want []string, distinct int) {
@@ -18,9 +23,6 @@ func check(t *testing.T, table map[string]string, want []string, distinct int) {
 	funcs := map[string]bool{}
 	for k, name := range table {
 		got = append(got, k)
-		if actions[name] == nil {
-			t.Errorf("%q bound to unknown action %q", k, name)
-		}
 		funcs[name] = true
 	}
 	sort.Strings(got)
