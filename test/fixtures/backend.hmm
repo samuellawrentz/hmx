@@ -1,0 +1,6 @@
+backend
+	auth
+		JWT rotation
+		> Rotate every 24h.
+		refresh
+	[[infra#redis]]
