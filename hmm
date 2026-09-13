@@ -3953,10 +3953,56 @@ function go_back()
 	display($mm);
 }
 
+function extract_subtree($id, $key)
+{
+	global $mm;
+
+	$file = $mm['map_dir'].'/'.$key.'.hmm';
+
+	if (file_exists($file))
+	{
+		message($mm, "$key.hmm exists, pick another name");
+		return false;
+	}
+
+	push_change($mm);
+
+	$mm['nodes'][$id]['title'] = $key;
+	file_put_contents($file, map_to_list($mm, $id));
+
+	$mm['nodes'][$id]['title'] = "[[$key]]";
+	$mm['nodes'][$id]['body'] = '';
+	delete_children_vh($mm, $id);
+	$mm['nodes'][$id]['is_leaf'] = true;
+	$mm['nodes'][$id]['children'] = [];
+
+	build_map($mm);
+	display($mm);
+
+	return true;
+}
+
 function extract_to_map()
 {
 	global $mm;
-	message($mm, 'extract_to_map: not implemented yet');
+
+	$id = $mm['active_node'];
+
+	if ($id == $mm['root_id'])
+		return;
+
+	$slug = trim(mb_ereg_replace('[^a-z0-9]+', '-', mb_strtolower($mm['nodes'][$id]['title'])), '-');
+	$default = basename($mm['filename'], '.hmm').'-'.$slug;
+
+	$key = magic_readline($mm, $default);
+
+	if ($key === false || $key === '')
+	{
+		display($mm);
+		return;
+	}
+
+	extract_subtree($id, $key);
 }
 
 function edit_body()

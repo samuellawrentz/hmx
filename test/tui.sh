@@ -39,6 +39,15 @@ enter_on_plain()
 	has zzz
 }
 
+extract()
+{
+	keys l
+	keys C-e
+	sleep 0.3
+	keys Enter
+	has '[[backend-auth]]' && [ -f "$1/backend-auth.hmm" ] && grep -q 'JWT rotation' "$1/backend-auth.hmm"
+}
+
 list_screen()
 {
 	printf 'inbox\n' > "$1/inbox.hmm"
@@ -55,4 +64,5 @@ run open_map        backend.hmm open_map
 run follow_and_back backend.hmm follow_and_back
 run enter_on_plain  backend.hmm enter_on_plain
 run list_screen     backend.hmm list_screen
+run extract         backend.hmm extract
 exit $status
