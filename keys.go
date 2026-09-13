@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"os/exec"
 	"sort"
 	"strings"
 
@@ -321,26 +322,53 @@ func editNodeInner(a *App, initial string) {
 
 // deleteNode ports delete_node_vh, ref/hmx.php 3093.
 func deleteNode(a *App) {
-	a.clip = a.m.Delete()
+	a.copyToClipboard(a.m.Delete())
 	a.build()
 	a.msg = "Item(s) are cut and placed into the clipboard."
 }
 
 // yankNode ports yank_node, ref/hmx.php 3075.
 func yankNode(a *App) {
-	a.clip = a.m.Yank()
+	a.copyToClipboard(a.m.Yank())
 	a.msg = "Item(s) are copied to the clipboard."
 }
 
 // pasteAsChildren/pasteAsSiblings port paste_sub_tree, ref/hmx.php 2897.
 func pasteAsChildren(a *App) {
-	a.m.Paste(a.clip, false)
+	a.m.Paste(a.getFromClipboard(), false)
 	a.build()
 }
 
 func pasteAsSiblings(a *App) {
-	a.m.Paste(a.clip, true)
+	a.m.Paste(a.getFromClipboard(), true)
 	a.build()
+}
+
+// copyToClipboard/getFromClipboard port copy_to_clipboard/get_from_clipboard, ref/hmx.php 2984-3030:
+// shell out to pbcopy/pbpaste when present, else keep the text in a.clip.
+func (a *App) copyToClipboard(text string) {
+	if path, err := exec.LookPath("pbcopy"); err == nil {
+		cmd := exec.Command(path)
+		cmd.Stdin = strings.NewReader(text)
+		cmd.Run()
+		return
+	}
+	a.clip = text
+}
+
+func (a *App) getFromClipboard() string {
+	text := a.clip
+	if path, err := exec.LookPath("pbpaste"); err == nil {
+		if out, err := exec.Command(path).Output(); err == nil {
+			text = string(out)
+		}
+	}
+	return strings.Map(func(r rune) rune {
+		if r <= 0x08 || (r >= 0x0B && r <= 0x1F) || r == 0x7F || r == 0xFEFF {
+			return -1
+		}
+		return r
+	}, text)
 }
 
 // moveNodeDown/moveNodeUp port move_node_down/up, ref/hmx.php 2298/2335.
