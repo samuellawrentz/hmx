@@ -130,6 +130,7 @@ config($mm, 'echo_keys',             false);
 config($mm, 'map_dir',               getenv('HOME').'/maps');
 config($mm, 'link_color',            "\033[38;5;33m");
 config($mm, 'body_marker_color',     "\033[38;5;214m");
+config($mm, 'overdue_color',         "\033[38;5;196m");
 
 
 if (isset($mm['arguments']['debug_config']))
@@ -756,7 +757,7 @@ function list_visible_children(&$mm, $id)
 function calculate_x_and_lh(&$mm, $id)
 {
 	$node = $mm['nodes'][$id];
-	$title = $node['title'].(($node['body'] ?? '') !== '' ? ' …' : '');
+	$title = node_text($mm, $node);
 
 
 	$mm['nodes'][$id]['x'] =
@@ -1254,7 +1255,7 @@ function calculate_xo(&$mm)
 function add_content_to_the_map(&$mm, $id)
 {
 	$node = $mm['nodes'][$id];
-	$title = $node['title'].(($node['body'] ?? '') !== '' ? ' …' : '');
+	$title = node_text($mm, $node);
 
 	$at_the_end =
 		$node['is_leaf']
@@ -3583,12 +3584,22 @@ function display(&$mm, $force_center = false)
 				,$line
 			);
 
+		// styling "[[task:uuid]]" links, red when overdue
+
+		$line =
+			preg_replace_callback
+			(
+				 '/\[\[task:([0-9a-z]{8})\]\]/'
+				,fn($m) => (($mm['tasks'][$m[1]]['overdue'] ?? false) ? $mm['overdue_color'] : $mm['link_color']).$m[0].default_color
+				,$line
+			);
+
 		// styling "[[links]]"
 
 		$line =
 			mb_ereg_replace
 			(
-				 '(\[\[[^\]]*\]\])'
+				 '(\[\[(?!task:)[^\]]*\]\])'
 				,$mm['link_color'].'\\1'.default_color
 				,$line
 			);
@@ -3829,10 +3840,71 @@ function enter_key()
 {
 	global $mm;
 	$n = $mm['nodes'][$mm['active_node']];
-	if (str_contains($n['title'].($n['body'] ?? ''), '[['))
+	if (preg_match('/\[\[task:([0-9a-z]{8})\]\]/', $n['title'], $m))
+		show_task($m[1]);
+	else if (str_contains($n['title'].($n['body'] ?? ''), '[['))
 		follow_link();
 	else
 		insert_new_sibling();
+}
+
+function show_task($uuid)
+{
+	global $mm;
+	if (exec('command -v task') === '')
+	{
+		message($mm, 'task binary not found');
+		return;
+	}
+
+	echo "\033[?1049l\033[?25h";
+	system('stty sane');
+	passthru('task rc.context=none '.escapeshellarg($uuid).' info | '.(getenv('PAGER') ?: 'less'));
+	enable_alternate_screen();
+	display($mm);
+}
+
+function node_text($mm, $node)
+{
+	$title =
+		preg_replace_callback
+		(
+			 '/\[\[task:([0-9a-z]{8})\]\]/'
+			,fn($m) => (($mm['tasks'][$m[1]]['done'] ?? false) ? '☑' : '☐').' '.$m[0]
+			,$node['title']
+		);
+
+	return $title.(($node['body'] ?? '') !== '' ? ' …' : '');
+}
+
+function tasks_from_export($json)
+{
+	$tasks = [];
+	foreach (json_decode($json, true) ?: [] as $task)
+	{
+		$done = $task['status'] === 'completed';
+		$tasks[substr($task['uuid'], 0, 8)] =
+		[
+			 'done'    => $done
+			,'overdue' => isset($task['due']) && !$done && strtotime($task['due']) < time()
+		];
+	}
+	return $tasks;
+}
+
+function load_tasks(&$mm)
+{
+	$uuids = [];
+	foreach ($mm['nodes'] as $node)
+		if (preg_match_all('/\[\[task:([0-9a-z]{8})\]\]/u', $node['title'] ?? '', $m))
+			$uuids = array_merge($uuids, $m[1]);
+
+	$mm['tasks'] = [];
+	if (empty($uuids) || exec('command -v task') === '')
+		return;
+
+	exec('task rc.context=none rc.verbose=nothing '.implode(' ', array_unique($uuids)).' export 2>/dev/null', $out);
+	$mm['tasks'] = tasks_from_export(implode('', $out));
 }
 
 function parse_link($text)
@@ -3866,6 +3938,8 @@ function load_map($file)
 
 	collapse_all($mm);
 	collapse_level($mm, $mm['initial_depth'], false);
+
+	load_tasks($mm);
 }
 
 function go_to_node($id)
