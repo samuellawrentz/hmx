@@ -127,6 +127,9 @@ config($mm, 'clipboard_out_command', "");
 config($mm, 'auto_save',             false);
 config($mm, 'echo_keys',             false);
 
+config($mm, 'map_dir',               getenv('HOME').'/maps');
+config($mm, 'link_color',            "\033[38;5;33m");
+
 
 if (isset($mm['arguments']['debug_config']))
 {
@@ -147,6 +150,7 @@ $mm['show_logo']            = true;
 $mm['changes']              = [];
 $mm['change_active_node']   = [];
 $mm['change_index']         = 0;
+$mm['stack']                = [];
 
 $mm['top_left_column']      = 0;
 $mm['top_left_row']         = 0;
@@ -3565,6 +3569,16 @@ function display(&$mm, $force_center = false)
 				,$line
 			);
 
+		// styling "[[links]]"
+
+		$line =
+			mb_ereg_replace
+			(
+				 '(\[\[[^\]]*\]\])'
+				,$mm['link_color'].'\\1'.default_color
+				,$line
+			);
+
 		// styling "{meta}"s
 
 		$line =
@@ -3589,6 +3603,16 @@ function display(&$mm, $force_center = false)
 
 
 	echo reset_page.reset_color.$output;
+
+	// showing the breadcrumb
+
+	if (!empty($mm['stack']))
+	{
+		$names = array_map(fn($s) => basename($s['file'], '.hmm'), $mm['stack']);
+		$names[] = basename($mm['filename'], '.hmm');
+
+		echo "\033[1;1f".implode(' › ', $names).' ['.count($mm['stack']).']'.reset_color;
+	}
 
 	// showing the logo :)
 
@@ -3780,16 +3804,147 @@ function enter_key()
 		insert_new_sibling();
 }
 
+function parse_link($text)
+{
+	if (!mb_ereg('\[\[([^\]]*)\]\]', $text, $m))
+		return null;
+
+	if (mb_substr($m[1], 0, 5) === 'task:')
+		return null;
+
+	$parts = explode('#', $m[1], 2);
+	return ['map' => $parts[0], 'node' => $parts[1] ?? null];
+}
+
+function load_map($file)
+{
+	global $mm;
+
+	$mm['nodes']              = [];
+	$mm['changes']            = [];
+	$mm['change_active_node'] = [];
+	$mm['change_index']       = 0;
+	$mm['query']              = '';
+	$mm['modified']           = false;
+	$mm['viewport_top']       = 0;
+	$mm['viewport_left']      = 0;
+	$mm['root_id']            = 2;
+
+	$mm['arguments']['filename'] = $file;
+	load_file($mm);
+
+	collapse_all($mm);
+	collapse_level($mm, $mm['initial_depth'], false);
+}
+
+function go_to_node($id)
+{
+	global $mm;
+	$mm['active_node'] = $id;
+	for ($p = $mm['nodes'][$id]['parent']; $p > 0; $p = $mm['nodes'][$p]['parent'])
+		$mm['nodes'][$p]['collapsed'] = false;
+}
+
+function open_map($file, $node = null)
+{
+	global $mm;
+
+	array_push($mm['stack'],
+	[
+		 'file'          => $mm['filename']
+		,'active_node'   => $mm['active_node']
+		,'viewport_top'  => $mm['viewport_top']
+		,'viewport_left' => $mm['viewport_left']
+	]);
+
+	if ($mm['modified'] ?? false)
+		save_vh($mm);
+
+	load_map($file);
+
+	if ($node !== null)
+	{
+		$id = null;
+		foreach ($mm['nodes'] as $nid=>$nd)
+			if ($nid != 0 && $nd['title'] === $node)
+				{ $id = $nid; break; }
+
+		if ($id === null)
+			foreach ($mm['nodes'] as $nid=>$nd)
+				if ($nid != 0 && mb_stripos($nd['title'], $node) !== false)
+					{ $id = $nid; break; }
+
+		if ($id === null)
+			message($mm, "node not found: $node");
+		else
+			go_to_node($id);
+	}
+
+	build_map($mm);
+	display($mm, true);
+}
+
 function follow_link()
 {
 	global $mm;
-	message($mm, 'follow_link: not implemented yet');
+
+	$n = $mm['nodes'][$mm['active_node']];
+	$link = parse_link($n['title']) ?? parse_link($n['body'] ?? '');
+
+	if ($link === null)
+		return;
+
+	$file = $mm['map_dir'].'/'.$link['map'].'.hmm';
+
+	if (!file_exists($file))
+	{
+		message($mm, "create {$link['map']}.hmm? [y/N]");
+
+		$key = '';
+		while ($key == '')
+		{
+			usleep(20000);
+			$key = fread(STDIN, 16);
+		}
+
+		if (strtolower(substr($key,0,1)) !== 'y')
+		{
+			display($mm);
+			return;
+		}
+
+		if (!is_dir($mm['map_dir']))
+			mkdir($mm['map_dir'], 0755, true);
+
+		file_put_contents($file, $link['map'].PHP_EOL);
+	}
+
+	open_map($file, $link['node']);
 }
 
 function go_back()
 {
 	global $mm;
-	message($mm, 'go_back: not implemented yet');
+
+	if (empty($mm['stack']))
+		return;
+
+	$prev = array_pop($mm['stack']);
+
+	if ($mm['modified'] ?? false)
+		save_vh($mm);
+
+	load_map($prev['file']);
+
+	if (isset($mm['nodes'][$prev['active_node']]))
+	{
+		go_to_node($prev['active_node']);
+		$mm['viewport_top']  = $prev['viewport_top'];
+		$mm['viewport_left'] = $prev['viewport_left'];
+	}
+
+	build_map($mm);
+	display($mm);
 }
 
 function extract_to_map()
