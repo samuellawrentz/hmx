@@ -1,11 +1,11 @@
 # Testing
 
-Three levels. Cheap first. Every phase must pass level 1; UI phases also level 2.
+Three levels. Cheap first. Every change must pass level 1; UI changes also level 2.
 
 ## 1. Unit (`go test ./...`)
 TDD: write the failing test first, then the code, one slice at a time. Fixtures are real `.hmm` files in `test/fixtures/` with real tabs. Never build fixtures from strings with spaces.
 
-**Golden layout tests.** For each fixture, `test/golden/<name>.txt` is the plain-text screen of the PHP reference (`tmux capture-pane -p`, fixed 120x40). `layout_test.go` renders the same fixture to a string grid and diffs against the golden. This is the parity gate for the layout port; regenerate goldens only from `ref/hmx.php`, never from Go.
+**Golden layout tests.** For each fixture, `test/golden/<name>.txt` (expanded) and `<name>.collapsed.txt` are the plain-text 120x40 screens of the PHP v1 (`test/golden/gen.sh`, which needs `git show f859da2:ref/hmx.php > ref/hmx.php`). `layout_test.go` renders the same fixture and diffs byte for byte. Goldens are frozen; never regenerate them from Go.
 
 | area | check |
 |---|---|
@@ -19,7 +19,7 @@ TDD: write the failing test first, then the code, one slice at a time. Fixtures 
 | task status | `task export` JSON fixture → ☐ / ☑ / overdue; missing `task` binary → plain render |
 
 ## 2. TUI smoke (`bash test/tui.sh`, tmux)
-`HMX_BIN` selects the binary (default `./hmx`; `php ref/hmx.php` runs the same suite against the reference). Run it inside a detached tmux pane of fixed size, send keys, capture the screen, assert on text.
+`HMX_BIN` selects the binary (default `./hmx`). Run it inside a detached tmux pane of fixed size, send keys, capture the screen, assert on text.
 ```
 tmux new-session -d -s hmxtest -x 100 -y 30 "$HMX_BIN /tmp/t/backend.hmm"
 tmux send-keys -t hmxtest j j Enter        # move, follow link
@@ -42,8 +42,8 @@ Golden text, not golden screenshots. Assert on 1–2 strings per scenario.
 - After phase 5: extract one real subtree, open both in upstream h-m-m, confirm it still reads them.
 - After phase 7: link 2 real tasks, mark one done in `twt`, reopen the map, confirm ☑.
 
-## Gates per phase
-`go vet ./...` · `go test ./...` · `bash test/tui.sh` (once the binary renders a map) · manual 30-second run on the example map, described in the commit message body.
+## Gates
+`go vet ./...` · `go test ./...` · `bash test/tui.sh` · manual 30-second run on the example map, described in the commit message body.
 
 ## Not testing
 Rendering geometry (upstream's job), colours, terminal resize, performance.

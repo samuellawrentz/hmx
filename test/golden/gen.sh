@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate goldens from the PHP reference only (testing.md). 120x40 tmux pane (own socket,
+# Regenerate goldens from the PHP reference only (testing.md); it is retired:
+#   git show f859da2:ref/hmx.php > ref/hmx.php 120x40 tmux pane (own socket,
 # status bar off so the pane really is 40 rows), one per fixture:
 #   <name>.txt           after pressing 0 (expand all)
 #   <name>.collapsed.txt as opened

@@ -21,7 +21,7 @@ recent/jump screen, templates, timestamps, archive, today view, in-TUI multiline
 
 ## Stack
 Go + tcell, single static binary, no runtime dependency. Deps: `gdamore/tcell/v2` (terminal, keys, cell grid), `mattn/go-runewidth` (display width). Nothing else.
-v1 was a PHP fork of h-m-m (branch `main`, `ref/hmx.php` on this branch); it proved the spec and is the behavioural reference for the port. It is deleted once the Go binary passes the same tmux suite.
+v1 was a PHP fork of h-m-m (branch `main`; `git show f859da2:ref/hmx.php` on this branch); it proved the spec and was the behavioural reference for the port, retired once the Go binary passed the same tmux suite.
 Not OpenTUI (flexbox model fights absolute-positioned trees, swaps php dep for bun dep).
 
 ## Prior art checked (2026-09-13)
