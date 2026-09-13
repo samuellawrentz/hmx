@@ -14,3 +14,4 @@ Fork of h-m-m: one PHP file `hmm`, global `$mm`, flat functions, `$keybindings[k
 - Node ids from `list_to_map` are sequential from 2 in file order, so tests can address nodes by id.
 - `insert_new_sibling` shows `NEW` in the tree while the inline editor is open; tui asserts on that.
 - macOS has no `timeout`; smoke tests use tmux (`send-keys`, `capture-pane -p`), see `test/tui.sh`.
+- PHP `passthru`/`system` pipe the child's stdout, so `less` dumps and exits and `vim` refuses to start. Anything interactive goes through `run_in_tty()`, which redirects to `/dev/tty` when stdout is a terminal.
