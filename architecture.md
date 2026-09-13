@@ -1,62 +1,58 @@
-# Architecture
+# Architecture (Go)
 
-One PHP file, one global `$mm`, flat functions, a key → function table. Same as upstream. Additions only.
+One `package main`, flat files, one `App` struct where the PHP had `$mm`. No interfaces with one implementation.
 
-## State (added to `$mm`)
+## Files
 ```
-mode   : 'list' | 'map'
-stack  : [{file, active_node, viewport_top, viewport_left}]   # nav history, memory only
-list   : {items, filter, cursor}
-nodes[id].body : string                                       # only new node field
+main.go      flags, config, mode loop (list | map), tcell screen lifecycle
+model.go     Node, Map: parse (.hmm with `> ` bodies) / serialize, ids, tree ops (insert, delete, move, yank/paste), undo stack
+layout.go    port of PHP calculate_x_and_lh / calculate_h / calculate_y / calculate_xo / build_map → cell grid with connectors
+render.go    grid → tcell (colours, active highlight, link/marker/task styling), viewport, breadcrumb, body pane, message line
+keys.go      key → action table (24 map keys, 7 list keys), inline line editor (port of magic_readline)
+links.go     parse [[map#node]] / [[task:uuid8]], follow, back (nav stack), confirm-create
+list.go      list screen: scan map_dir, inbox first, mtime, node count, filter, content-grep fallback, rename (rewrites inbound links)
+extract.go   extract subtree to <map>-<slug>.hmm
+body.go      $EDITOR round-trip (suspend tcell), body pane
+tasks.go     taskwarrior stage A: one `task export`, ☐/☑/overdue
+help.go      help screen generated from the key table
 ```
+
+## State
+```go
+type App struct {
+    mode    string            // "list" | "map"
+    file    string
+    nodes   map[int]*Node     // id → node; 0 = hidden super-root, root = 1 or 2 as in PHP
+    root, active int
+    stack   []NavEntry        // {file, active, viewTop, viewLeft}
+    grid    [][]Cell          // laid-out map, rebuilt after every mutation
+    view    struct{ top, left int }
+    undo    []Snapshot
+    tasks   map[string]TaskStatus
+    list    struct{ items []MapInfo; filter string; cursor int }
+    cfg     Config            // map_dir, colours, widths; file → env hmx_* → flags
+    modified bool
+}
+```
+Node ids stay sequential from 2 in file order (tests address nodes by id, same as PHP).
 
 ## Flow
 ```
 main
-  args.file ? mode=map : mode=list
-  loop
-    mode == list → list_screen()      # own key loop, returns file or null
-    mode == map  → existing key loop
-                    Enter     → follow_link() | insert_new_sibling()
-                    Backspace → go_back()
-                    ctrl+e    → extract_to_map()
-                    E         → edit_body()
-                    q         → save-if-modified, mode=list
+  no arg → mode=list : list.go loop → Enter → openMap
+  map loop: tcell.PollEvent → keys.go table → action(app) → layout.Build → render.Draw
+    Enter     → link in node? followLink : insertSibling
+    Backspace → goBack
+    ctrl+e    → extractToMap
+    E         → editBody (screen.Suspend, $EDITOR, Resume)
+    q         → save if modified, mode=list
 ```
 
-## Functions
-| fn | does | ~lines |
-|---|---|---|
-| `list_screen()` | scan dir, filter, draw, key loop | 90 |
-| `open_map(file, node?)` | push stack, save if modified, `load_file`, jump to node | 30 |
-| `follow_link()` | parse `[[..]]` from title then body; confirm-create if missing | 30 |
-| `go_back()` | pop stack, reload, restore position | 15 |
-| `extract_to_map()` | subtree → file via serializer, title → `[[key]]`, drop children | 40 |
-| `edit_body()` | tmp file, `$EDITOR`, reparse, mark modified | 30 |
-| `detail_pane()` | draw body in bottom rows, called from `display()` | 30 |
-| `rename_map()` | mv, `sed -i` inbound links, report | 15 |
-| `display()` Δ | colour links, `…` marker, reserve pane rows | 15 |
-| `load_file()` / `save()` Δ | `> ` body lines in and out | 25 |
+## Layout port rules
+- Port function by function from `ref/hmx.php` (calculate_x_and_lh 748, calculate_aligned_x 826, calculate_h 863, calculate_y 912, calculate_children_y 922, calculate_height_shift 960, calculate_xo 1221, build_map 1298). Same names, same order, same arithmetic. Do not redesign the algorithm.
+- Width = runewidth.StringWidth. Wrap = same word-wrap semantics as PHP `wordwrap` at max_leaf_node_width / max_parent_node_width.
+- Golden tests: the PHP binary's plain-text screen (tmux capture, no colours) for each fixture is the expected grid. Go must match byte for byte inside the tree area.
 
-## Sequence: follow a link
-```mermaid
-sequenceDiagram
-  participant K as key loop
-  participant F as follow_link
-  participant O as open_map
-  participant L as load_file
-  K->>F: Enter on "[[infra#redis]]"
-  F->>F: parse → map=infra, node=redis
-  F->>O: open_map(infra.hmm, "redis")
-  O->>O: stack.push(current)
-  O->>O: save() if modified
-  O->>L: load_file(infra.hmm)
-  O->>O: active_node = find("redis") ?? root
-  O-->>K: display()
-```
-
-## Invariants
-- `$mm['nodes']` holds exactly one map. Never two.
-- The file on disk is the truth. Task status, link targets, node counts are recomputed on load, never cached.
-- Every write to disk goes through `save()`. Extract and rename are the only functions that write other files.
-- Taskwarrior is read-only until stage B. hmx never mutates task state in stage A.
+## Invariants (unchanged)
+- One map in memory. File on disk is the truth. Every write goes through `Map.Save`; extract and rename are the only functions that write other files.
+- Taskwarrior is read-only.
