@@ -80,7 +80,7 @@ elseif (isset($mm['arguments']['config']))
 $mm['env']=[];
 $e = getenv();
 foreach ($e as $k=>$v)
-	if (substr($k,0,4)=='hmm_')
+	if (substr($k,0,4)=='hmx_')
 		$mm['env'][str_replace('-','_',substr($k,4))] = $v ?? '';
 
 

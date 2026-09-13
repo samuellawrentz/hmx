@@ -6,7 +6,7 @@ Fork of h-m-m: one PHP file `hmx`, global `$mm`, flat functions, `$keybindings[k
 `php -l hmx` · `bash test/run.sh` (unit, includes `hmx` with `HMX_TEST` defined so main never runs) · `bash test/tui.sh` (tmux smoke, fixtures in `test/fixtures/` with real tabs).
 
 ## Config
-`~/.config/hmx/config` (or `$XDG_CONFIG_HOME/hmx/config`), same `key=value` and `bind…` lines as upstream. Upstream's `h-m-m.conf` is not read. Map files keep the `.hmm` extension.
+`~/.config/hmx/config` (or `$XDG_CONFIG_HOME/hmx/config`), same `key=value` and `bind…` lines as upstream. Environment overrides use the `hmx_` prefix (`hmx_map_dir=…`), not upstream's `hmm_`. Upstream's `h-m-m.conf` is not read. Map files keep the `.hmm` extension.
 
 ## Upstream gotchas
 - Layout is horizontal: `l` descends into the first child, `j`/`k` move between siblings. `j` on a single child does nothing (same y as parent).
