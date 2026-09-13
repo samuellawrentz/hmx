@@ -17,6 +17,7 @@ type App struct {
 	msg    string
 	query  string
 	clip   string
+	stack  []NavEntry
 	quit   bool
 }
 

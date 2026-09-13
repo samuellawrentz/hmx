@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// spec.md map bindings (arrows and Ctrl-C are aliases). Phase 4 adds E Backspace Backspace2 Ctrl-E and enter_key.
+// spec.md map bindings (arrows, Ctrl-C, Backspace2 are aliases). Phase 6 adds E and Ctrl-E.
 func TestKeymap(t *testing.T) {
-	want := strings.Fields("h j k l Up Down Left Right Space f 0 1 o Tab e d y p P J K u / n N Enter s q Ctrl-C ?")
-	check(t, mapKeys, want, 24)
+	want := strings.Fields("h j k l Up Down Left Right Space f 0 1 o Tab e d y p P J K u / n N Enter Backspace Backspace2 s q Ctrl-C ?")
+	check(t, mapKeys, want, 26)
 }
 
 func check(t *testing.T, table map[string]string, want []string, distinct int) {

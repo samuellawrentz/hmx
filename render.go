@@ -33,6 +33,10 @@ func (a *App) draw() {
 		putRow(a.s, 0, y, row, styles)
 	}
 
+	if bc := a.breadcrumb(); bc != "" {
+		putStr(a.s, 0, 0, bc, tcell.StyleDefault)
+	}
+
 	putMessage(a.s, w, h, a.msg)
 	a.s.Show()
 }

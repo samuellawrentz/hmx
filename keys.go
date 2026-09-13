@@ -46,39 +46,43 @@ var actions = map[string]func(*App){
 	"search":                 search,
 	"next_search_result":     func(a *App) { nextSearchResult(a) },
 	"previous_search_result": func(a *App) { previousSearchResult(a) },
+	"enter_key":              enterKey,
+	"go_back":                (*App).goBack,
 }
 
 var mapKeys = map[string]string{
-	"h":      "go_left",
-	"j":      "go_down",
-	"k":      "go_up",
-	"l":      "go_right",
-	"Left":   "go_left",
-	"Down":   "go_down",
-	"Up":     "go_up",
-	"Right":  "go_right",
-	"Space":  "toggle_node",
-	"f":      "focus",
-	"0":      "expand_all",
-	"1":      "collapse_all",
-	"s":      "save",
-	"q":      "quit",
-	"Ctrl-C": "quit",
-	"?":      "help",
-	"o":      "insert_new_sibling",
-	"Tab":    "insert_new_child",
-	"e":      "edit_node",
-	"d":      "delete_node",
-	"y":      "yank_node",
-	"p":      "paste_as_children",
-	"P":      "paste_as_siblings",
-	"J":      "move_node_down",
-	"K":      "move_node_up",
-	"u":      "undo",
-	"/":      "search",
-	"n":      "next_search_result",
-	"N":      "previous_search_result",
-	"Enter":  "insert_new_sibling",
+	"h":          "go_left",
+	"j":          "go_down",
+	"k":          "go_up",
+	"l":          "go_right",
+	"Left":       "go_left",
+	"Down":       "go_down",
+	"Up":         "go_up",
+	"Right":      "go_right",
+	"Space":      "toggle_node",
+	"f":          "focus",
+	"0":          "expand_all",
+	"1":          "collapse_all",
+	"s":          "save",
+	"q":          "quit",
+	"Ctrl-C":     "quit",
+	"?":          "help",
+	"o":          "insert_new_sibling",
+	"Tab":        "insert_new_child",
+	"e":          "edit_node",
+	"d":          "delete_node",
+	"y":          "yank_node",
+	"p":          "paste_as_children",
+	"P":          "paste_as_siblings",
+	"J":          "move_node_down",
+	"K":          "move_node_up",
+	"u":          "undo",
+	"/":          "search",
+	"n":          "next_search_result",
+	"N":          "previous_search_result",
+	"Enter":      "enter_key",
+	"Backspace":  "go_back",
+	"Backspace2": "go_back",
 }
 
 // changeActiveNode ports change_active_node, ref/hmx.php 2763-2890.
@@ -281,6 +285,16 @@ func padRight(s string, n int) string {
 // insertNewSibling/insertNewChild port insert_new_node, ref/hmx.php 1623.
 func insertNewSibling(a *App) { insertNewNode(a, a.m.InsertSibling) }
 func insertNewChild(a *App)   { insertNewNode(a, a.m.InsertChild) }
+
+// enterKey ports enter_key, ref/hmx.php 3835 ([[task:]] branch is phase 7).
+func enterKey(a *App) {
+	n := a.m.Nodes[a.m.Active]
+	if strings.Contains(n.Title+n.Body, "[[") {
+		a.followLink()
+	} else {
+		insertNewSibling(a)
+	}
+}
 
 func insertNewNode(a *App, insert func() int) {
 	insert()
