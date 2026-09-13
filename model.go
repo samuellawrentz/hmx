@@ -28,6 +28,7 @@ type Map struct {
 	File     string
 	Modified bool
 	undo     []snapshot
+	Tasks    map[string]TaskStatus
 
 	Top, Left                              int
 	rows                                   [][]rune

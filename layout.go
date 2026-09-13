@@ -60,14 +60,6 @@ func wordwrap(s string, width int) string {
 	return string(out)
 }
 
-// nodeText ports node_text 3868 (tasks map is always empty for now).
-func nodeText(node *Node) string {
-	if node.Body != "" {
-		return node.Title + " …"
-	}
-	return node.Title
-}
-
 // mmput ports mmput 3670.
 func mmput(m *Map, x int, y float64, s string) {
 	yi := int(math.Round(y))
@@ -112,7 +104,7 @@ func maxWidthFor(node *Node) int {
 // calculateXAndLh ports calculate_x_and_lh 748 (align_levels dropped, always 0).
 func calculateXAndLh(m *Map, id int) {
 	node := m.Nodes[id]
-	title := nodeText(node)
+	title := nodeText(m, node)
 	parent := m.Nodes[node.Parent]
 
 	node.x = parent.x + parent.w + connLeftLen + connRightLen + 1
@@ -323,7 +315,7 @@ func calculateXo(m *Map) {
 // addContentToTheMap ports add_content_to_the_map 1246.
 func addContentToTheMap(m *Map, id int) {
 	node := m.Nodes[id]
-	for i, line := range wrapLines(nodeText(node), maxWidthFor(node)) {
+	for i, line := range wrapLines(nodeText(m, node), maxWidthFor(node)) {
 		mmput(m, node.x+node.xo, float64(node.y+node.yo+i), line+" ")
 	}
 	if !node.Collapsed {

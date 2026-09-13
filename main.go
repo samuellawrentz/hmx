@@ -101,6 +101,7 @@ func confPath(argv []string) string {
 func (a *App) openMap(file string) {
 	m, _ := Load(file)
 	a.m = m
+	a.m.loadTasks()
 	a.m.CollapseAll()
 	a.m.CollapseLevel(1)
 	a.build()

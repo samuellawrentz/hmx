@@ -290,10 +290,12 @@ func padRight(s string, n int) string {
 func insertNewSibling(a *App) { insertNewNode(a, a.m.InsertSibling) }
 func insertNewChild(a *App)   { insertNewNode(a, a.m.InsertChild) }
 
-// enterKey ports enter_key, ref/hmx.php 3835 ([[task:]] branch is phase 7).
+// enterKey ports enter_key, ref/hmx.php 3835.
 func enterKey(a *App) {
 	n := a.m.Nodes[a.m.Active]
-	if strings.Contains(n.Title+n.Body, "[[") {
+	if mm := taskRe.FindStringSubmatch(n.Title); mm != nil {
+		a.showTask(mm[1])
+	} else if strings.Contains(n.Title+n.Body, "[[") {
 		a.followLink()
 	} else {
 		insertNewSibling(a)

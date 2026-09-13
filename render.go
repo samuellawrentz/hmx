@@ -37,7 +37,7 @@ func (a *App) draw() {
 
 	for y := 0; y < rows; y++ {
 		row := rowAt(a.m, y, w)
-		styles := styleRow(row, y, x1, x2, y1, y2, query)
+		styles := styleRow(row, y, x1, x2, y1, y2, query, a.m.Tasks)
 		putRow(a.s, 0, y, row, styles)
 	}
 
@@ -87,7 +87,7 @@ func rowAt(m *Map, y, w int) []rune {
 // styleRow assigns a style per rune of one screen row, porting the colouring
 // rules in display(): connectors, "[+]", links/ellipsis (non-active rows),
 // "(?)"/"???", "{...}" dimming, and query-match reverse video.
-func styleRow(row []rune, y, x1, x2, y1, y2 int, query []rune) []tcell.Style {
+func styleRow(row []rune, y, x1, x2, y1, y2 int, query []rune, tasks map[string]TaskStatus) []tcell.Style {
 	n := len(row)
 	fg := make([]int, n)
 	for i := range fg {
@@ -135,8 +135,12 @@ func styleRow(row []rune, y, x1, x2, y1, y2 int, query []rune) []tcell.Style {
 					j++
 				}
 				if j+1 < n && row[j+1] == ']' {
+					color := 33
+					if uuid, ok := strings.CutPrefix(string(row[i+2:j]), "task:"); ok && len(uuid) >= 8 && tasks[uuid[:8]].overdue {
+						color = 196
+					}
 					for k := i; k <= j+1; k++ {
-						fg[k] = 33
+						fg[k] = color
 					}
 				}
 			}
