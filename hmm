@@ -151,6 +151,7 @@ $mm['changes']              = [];
 $mm['change_active_node']   = [];
 $mm['change_index']         = 0;
 $mm['stack']                = [];
+$mm['mode']                 = 'map';
 
 $mm['top_left_column']      = 0;
 $mm['top_left_row']         = 0;
@@ -2622,9 +2623,11 @@ function message(&$mm, $body, $prefix='')
 function quit()
 {
 	global $mm;
-	if (($mm['modified'] ?? false) === false)
-		shutdown();
-	message($mm, "You have unsaved changes. Save them, or use shift+Q to quit without saving.");
+	if ($mm['modified'] ?? false)
+		save_vh($mm);
+	$mm['stack']    = [];
+	$mm['filename'] = '';
+	$mm['mode']     = 'list';
 }
 
 
@@ -3406,6 +3409,9 @@ function collapse_level(&$mm, $level, $no_display = false)
 
 function display(&$mm, $force_center = false)
 {
+	if ($mm['mode'] == 'list')
+		return;
+
 	if ($mm['focus_lock'])
 	{
 		focus_vh($mm);
@@ -3959,6 +3965,153 @@ function edit_body()
 	message($mm, 'edit_body: not implemented yet');
 }
 
+function list_rows($filter)
+{
+	global $mm;
+	$rows = [];
+	foreach (glob($mm['map_dir'].'/*.hmm') as $file)
+	{
+		$name = basename($file, '.hmm');
+		if ($filter !== '' && mb_stripos($name, $filter) === false)
+			continue;
+		$rows[] = ['name'=>$name, 'file'=>$file, 'count'=>map_node_count($file), 'mtime'=>filemtime($file)];
+	}
+	usort($rows, function($a, $b)
+	{
+		if (($a['name']==='inbox') !== ($b['name']==='inbox'))
+			return $a['name']==='inbox' ? -1 : 1;
+		return $b['mtime'] <=> $a['mtime'];
+	});
+	return $rows;
+}
+
+function list_screen()
+{
+	global $mm;
+	stream_set_blocking(STDIN, false);
+	$mm['mode'] = 'list';
+
+	$filter = '';
+	$cursor = 0;
+	while (true)
+	{
+		$mm['terminal_width']  = (int)exec('tput cols');
+		$mm['terminal_height'] = (int)exec('tput lines');
+		$rows   = list_rows($filter);
+		$cursor = max(0, min($cursor, count($rows)-1));
+
+		echo reset_page.reset_color;
+		echo 'maps in '.$mm['map_dir'].($filter!=='' ? '  /'.$filter : '')."\n\n";
+		if (empty($rows))
+			echo ($filter!=='' ? "no match for /$filter" : 'no maps')."\n";
+
+		foreach ($rows as $i=>$row)
+		{
+			$s = time() - $row['mtime'];
+			$age = match(true) { $s<60 => $s.'s', $s<3600 => intdiv($s,60).'m', $s<86400 => intdiv($s,3600).'h', default => intdiv($s,86400).'d' };
+			echo
+				($i==$cursor ? $mm['active_node_color'] : '')
+				.str_pad($row['name'], 32).str_pad($row['count'], 5, ' ', STR_PAD_LEFT)
+				.'  '.str_pad($age, 4, ' ', STR_PAD_LEFT)
+				.($i==$cursor ? reset_color : '')."\n"
+			;
+		}
+
+		do
+		{
+			usleep(20000);
+			$in = fread(STDIN, 16);
+		}
+		while (empty($in));
+
+		if ($in=='j' || $in==special_keys['arr_down'])
+			$cursor = min($cursor+1, count($rows)-1);
+		elseif ($in=='k' || $in==special_keys['arr_up'])
+			$cursor = max($cursor-1, 0);
+		elseif ($in=='q' || $in==special_keys['ctrl_c'])
+			return null;
+		elseif ($in=='/')
+		{
+			$new = magic_readline($mm, $filter);
+			if ($new !== false)
+				$filter = $new;
+			$cursor = 0;
+		}
+		elseif ($in==special_keys['enter'] && !empty($rows))
+			return $rows[$cursor]['file'];
+		elseif ($in==special_keys['enter'] && $filter !== '')
+		{
+			exec('grep -il '.escapeshellarg($filter).' '.escapeshellarg($mm['map_dir']).'/*.hmm', $hits);
+			if (!empty($hits))
+			{
+				$mm['list_query'] = $filter;
+				return $hits[0];
+			}
+			message($mm, 'no match');
+		}
+		elseif ($in=='n')
+		{
+			$name = magic_readline($mm, '');
+			if ($name === false || $name === '')
+				continue;
+			$file = $mm['map_dir'].'/'.$name.'.hmm';
+			if (file_exists($file))
+				message($mm, "$name.hmm already exists");
+			else
+			{
+				file_put_contents($file, $name.PHP_EOL);
+				return $file;
+			}
+		}
+		elseif ($in=='r' && !empty($rows))
+		{
+			$new = magic_readline($mm, $rows[$cursor]['name']);
+			if ($new !== false && $new !== '' && $new !== $rows[$cursor]['name'])
+				rename_map($rows[$cursor]['name'], $new);
+		}
+		elseif ($in=='d' && !empty($rows))
+		{
+			message($mm, "delete {$rows[$cursor]['name']}.hmm? [y/N]");
+			$key = '';
+			while ($key == '')
+			{
+				usleep(20000);
+				$key = fread(STDIN, 16);
+			}
+			if (strtolower(substr($key,0,1)) === 'y')
+				unlink($rows[$cursor]['file']);
+		}
+	}
+}
+
+function rename_map($old, $new)
+{
+	global $mm;
+	$old_file = $mm['map_dir'].'/'.$old.'.hmm';
+	$new_file = $mm['map_dir'].'/'.$new.'.hmm';
+
+	if (file_exists($new_file))
+	{
+		message($mm, "$new.hmm already exists");
+		return;
+	}
+
+	rename($old_file, $new_file);
+	$touched = 0;
+	foreach (glob($mm['map_dir'].'/*.hmm') as $file)
+	{
+		$c = file_get_contents($file);
+		$r = str_replace(["[[$old]]", "[[$old#"], ["[[$new]]", "[[$new#"], $c);
+		if ($r !== $c)
+		{
+			file_put_contents($file, $r);
+			$touched++;
+		}
+	}
+
+	message($mm, "renamed, $touched files updated");
+}
+
 // }}}
 // {{{ monitor key presses
 
@@ -3967,7 +4120,7 @@ function monitor_key_presses(&$mm)
 	global $keybindings;
 	stream_set_blocking(STDIN,false);
 
-	while(true)
+	while ($mm['mode'] == 'map')
 	{
 		usleep(20000);
 		$in = fread(STDIN, 16);
@@ -4005,13 +4158,38 @@ if (!defined('HMM_TEST')) {
 	check_the_available_clipboard_tool($mm);
 
 	enable_alternate_screen();
-	load_file($mm);
 
-	collapse_all($mm);
-	collapse_level($mm, $mm['initial_depth'], false);
+	if (!is_dir($mm['map_dir']))
+		mkdir($mm['map_dir'], 0755, true);
+
+	if (isset($mm['arguments']['filename']))
+		load_map($mm['arguments']['filename']);
+	else
+		$mm['filename'] = '';
 
 	$mm['show_logo'] = false;
-	monitor_key_presses($mm);
+
+	while (true)
+	{
+		if ($mm['filename'] === '')
+		{
+			$file = list_screen();
+			if ($file === null)
+				shutdown();
+			load_map($file);
+			if ($mm['list_query'] ?? '')
+			{
+				$mm['query']      = $mm['list_query'];
+				$mm['list_query'] = '';
+				next_search_result();
+			}
+		}
+
+		$mm['mode'] = 'map';
+		build_map($mm);
+		display($mm);
+		monitor_key_presses($mm);
+	}
 }
 
 // }}}
