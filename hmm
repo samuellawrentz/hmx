@@ -296,124 +296,57 @@ const insert_child          = 1;
 
 $keybindings = [];
 
-$keybindings['a'] = 'edit_node_append';
-$keybindings['A'] = 'edit_node_replace';
-
-$keybindings['b'] = 'expand_all';
-
-$keybindings['c'] = 'center_active_node';
-$keybindings['C'] = 'toggle_center_lock';
-$keybindings[special_keys['ctrl_c']] = 'quit';
-
-$keybindings['d'] = 'delete_node';
-$keybindings['D'] = 'delete_children';
-$keybindings[special_keys['del']] = 'delete_node_without_clipboard';
-
-$keybindings['e'] = 'edit_node_append';
-$keybindings['E'] = 'edit_node_replace';
-
-$keybindings['f'] = 'focus';
-$keybindings['F'] = 'toggle_focus_lock';
-
-$keybindings['g'] = 'go_to_top';
-$keybindings['G'] = 'go_to_bottom';
-
 $keybindings['h'] = 'go_left';
-$keybindings['H'] = 'toggle_hide';
-$keybindings[special_keys['ctrl_h']] = 'toggle_show_hidden';
-$keybindings[special_keys['ctrl_arr_left']] = 'move_viewport_right';
-
-$keybindings['i'] = 'edit_node_append';
-$keybindings['I'] = 'edit_node_replace';
-
 $keybindings['j'] = 'go_down';
-$keybindings['J'] = 'move_node_down';
-$keybindings[special_keys['ctrl_arr_down']] = 'move_viewport_up';
-
 $keybindings['k'] = 'go_up';
-$keybindings['K'] = 'move_node_up';
-$keybindings[special_keys['ctrl_arr_up']] = 'move_viewport_down';
-
 $keybindings['l'] = 'go_right';
-$keybindings[special_keys['ctrl_arr_right']] = 'move_viewport_left';
-
-$keybindings['m'] = 'go_to_root';
-$keybindings['~'] = 'go_to_root';
-
-$keybindings['n'] = 'next_search_result';
-$keybindings['N'] = 'previous_search_result';
-
-$keybindings['o'] = 'insert_new_sibling';
-$keybindings['O'] = 'insert_new_child';
-$keybindings[special_keys['ctrl_o']] = 'open_link';
-
-$keybindings['p'] = 'paste_as_children';
-$keybindings['P'] = 'paste_as_siblings';
-$keybindings[special_keys['ctrl_p']] = 'append';
-
-$keybindings['q'] = 'quit';
-$keybindings['Q'] = 'shutdown';
-$keybindings[special_keys['ctrl_q']] = 'quit_with_debug';
-
-$keybindings['r'] = 'collapse_other_branches';
-$keybindings['R'] = 'collapse_inner';
-
-$keybindings['s'] = 'save';
-$keybindings['S'] = 'save_as';
-
-$keybindings['t'] = 'toggle_symbol';
-$keybindings['T'] = 'sort_siblings';
-$keybindings['#'] = 'toggle_numbers';
-
-$keybindings['u'] = 'undo';
-
-$keybindings['v'] = 'collapse_all';
-$keybindings['V'] = 'collapse_children';
-
-$keybindings['w'] = 'increase_text_width';
-$keybindings['W'] = 'decrease_text_width';
-
-$keybindings['x'] = 'export_html';
-$keybindings['X'] = 'export_text';
-
-$keybindings['y'] = 'yank_node';
-$keybindings['Y'] = 'yank_children';
-
-$keybindings['z'] = 'decrease_line_spacing';
-$keybindings['Z'] = 'increase_line_spacing';
-
-$keybindings["\n"] = 'insert_new_sibling';
-$keybindings["\t"] = 'insert_new_child';
-$keybindings[" "]  = 'toggle_node';
 
 $keybindings[special_keys['arr_down']]  = 'go_down';
 $keybindings[special_keys['arr_up']]    = 'go_up';
 $keybindings[special_keys['arr_right']] = 'go_right';
 $keybindings[special_keys['arr_left']]  = 'go_left';
 
-$keybindings[special_keys['alt_arr_up']]   = 'add_star';
-$keybindings[special_keys['alt_arr_down']] = 'remove_star';
+$keybindings[" "]  = 'toggle_node';
 
-$keybindings['1'] = 'collapse_level_1';
-$keybindings['2'] = 'collapse_level_2';
-$keybindings['3'] = 'collapse_level_3';
-$keybindings['4'] = 'collapse_level_4';
-$keybindings['5'] = 'collapse_level_5';
-$keybindings['6'] = 'collapse_level_6';
-$keybindings['7'] = 'collapse_level_7';
-$keybindings['8'] = 'collapse_level_8';
-$keybindings['9'] = 'collapse_level_9';
+$keybindings['f'] = 'focus';
 
-$keybindings['|'] = 'toggle_align';
+$keybindings['0'] = 'expand_all';
 
-$keybindings['?']    = 'help';
-$keybindings['/']    = 'search';
-$keybindings[special_keys['ctrl_f']] = 'search';
+$keybindings['o'] = 'insert_new_sibling';
+$keybindings["\t"] = 'insert_new_child';
 
-$keybindings['=']    = 'increase_positive_rank';
-$keybindings['+']    = 'decrease_positive_rank';
-$keybindings['-']    = 'increase_negative_rank';
-$keybindings['_']    = 'decrease_negative_rank';
+$keybindings['e'] = 'edit_node_append';
+$keybindings['E'] = 'edit_body';
+
+$keybindings['d'] = 'delete_node';
+
+$keybindings['y'] = 'yank_node';
+
+$keybindings['p'] = 'paste_as_children';
+$keybindings['P'] = 'paste_as_siblings';
+
+$keybindings['J'] = 'move_node_down';
+$keybindings['K'] = 'move_node_up';
+
+$keybindings['u'] = 'undo';
+
+$keybindings['/'] = 'search';
+$keybindings['n'] = 'next_search_result';
+$keybindings['N'] = 'previous_search_result';
+
+$keybindings["\n"] = 'enter_key';
+
+$keybindings[special_keys['back_space']] = 'go_back';
+$keybindings["\010"] = 'go_back';
+
+$keybindings[special_keys['ctrl_e']] = 'extract_to_map';
+
+$keybindings['s'] = 'save';
+
+$keybindings['q'] = 'quit';
+$keybindings[special_keys['ctrl_c']] = 'quit';
+
+$keybindings['?'] = 'help';
 
 foreach ($mm['config'] as $key=>$value)
 	if (substr($key,0,4) == 'bind')
@@ -3833,6 +3766,43 @@ function replace_stars($text,$stars)
 		return $text . ' ' . $stars_string;
 }
 
+
+// }}}
+// {{{ hmm additions
+
+function enter_key()
+{
+	global $mm;
+	$n = $mm['nodes'][$mm['active_node']];
+	if (str_contains($n['title'].($n['body'] ?? ''), '[['))
+		follow_link();
+	else
+		insert_new_sibling();
+}
+
+function follow_link()
+{
+	global $mm;
+	message($mm, 'follow_link: not implemented yet');
+}
+
+function go_back()
+{
+	global $mm;
+	message($mm, 'go_back: not implemented yet');
+}
+
+function extract_to_map()
+{
+	global $mm;
+	message($mm, 'extract_to_map: not implemented yet');
+}
+
+function edit_body()
+{
+	global $mm;
+	message($mm, 'edit_body: not implemented yet');
+}
 
 // }}}
 // {{{ monitor key presses
