@@ -16,6 +16,7 @@ type App struct {
 	mapDir string
 	msg    string
 	query  string
+	clip   string
 	quit   bool
 }
 
@@ -100,9 +101,8 @@ func (a *App) openMap(file string) {
 	a.m = m
 	a.m.CollapseAll()
 	a.m.CollapseLevel(1)
-	w, h := a.s.Size()
-	Build(a.m, w, h)
-	a.m.Center(w, h)
+	a.build()
+	a.m.Center(a.s.Size())
 }
 
 func main() {

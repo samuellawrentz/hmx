@@ -18,18 +18,33 @@ func keyName(ev *tcell.EventKey) string {
 	return tcell.KeyNames[ev.Key()]
 }
 
+func (a *App) build() { w, h := a.s.Size(); Build(a.m, w, h) }
+
 var actions = map[string]func(*App){
-	"go_left":      func(a *App) { changeActiveNode(a, -1, 0) },
-	"go_down":      func(a *App) { changeActiveNode(a, 0, 1) },
-	"go_up":        func(a *App) { changeActiveNode(a, 0, -1) },
-	"go_right":     func(a *App) { changeActiveNode(a, 1, 0) },
-	"toggle_node":  toggleNode,
-	"focus":        focus,
-	"expand_all":   expandAllAction,
-	"collapse_all": collapseAllAction,
-	"save":         save,
-	"quit":         quitAction,
-	"help":         help,
+	"go_left":                func(a *App) { changeActiveNode(a, -1, 0) },
+	"go_down":                func(a *App) { changeActiveNode(a, 0, 1) },
+	"go_up":                  func(a *App) { changeActiveNode(a, 0, -1) },
+	"go_right":               func(a *App) { changeActiveNode(a, 1, 0) },
+	"toggle_node":            toggleNode,
+	"focus":                  focus,
+	"expand_all":             expandAllAction,
+	"collapse_all":           collapseAllAction,
+	"save":                   save,
+	"quit":                   quitAction,
+	"help":                   help,
+	"insert_new_sibling":     insertNewSibling,
+	"insert_new_child":       insertNewChild,
+	"edit_node":              editNode,
+	"delete_node":            deleteNode,
+	"yank_node":              yankNode,
+	"paste_as_children":      pasteAsChildren,
+	"paste_as_siblings":      pasteAsSiblings,
+	"move_node_down":         moveNodeDown,
+	"move_node_up":           moveNodeUp,
+	"undo":                   undoAction,
+	"search":                 search,
+	"next_search_result":     func(a *App) { nextSearchResult(a) },
+	"previous_search_result": func(a *App) { previousSearchResult(a) },
 }
 
 var mapKeys = map[string]string{
@@ -49,6 +64,20 @@ var mapKeys = map[string]string{
 	"q":      "quit",
 	"Ctrl-C": "quit",
 	"?":      "help",
+	"o":      "insert_new_sibling",
+	"Tab":    "insert_new_child",
+	"e":      "edit_node",
+	"d":      "delete_node",
+	"y":      "yank_node",
+	"p":      "paste_as_children",
+	"P":      "paste_as_siblings",
+	"J":      "move_node_down",
+	"K":      "move_node_up",
+	"u":      "undo",
+	"/":      "search",
+	"n":      "next_search_result",
+	"N":      "previous_search_result",
+	"Enter":  "insert_new_sibling",
 }
 
 // changeActiveNode ports change_active_node, ref/hmx.php 2763-2890.
@@ -136,8 +165,7 @@ func toggleNode(a *App) {
 	}
 	n := m.Nodes[m.Active]
 	n.Collapsed = !n.Collapsed
-	w, h := a.s.Size()
-	Build(m, w, h)
+	a.build()
 }
 
 // focus ports focus/focus_vh, ref/hmx.php 3223.
@@ -145,9 +173,8 @@ func focus(a *App) {
 	m := a.m
 	collapseSiblings(m, m.Active)
 	expandSiblings(m, m.Active)
-	w, h := a.s.Size()
-	Build(m, w, h)
-	m.Center(w, h)
+	a.build()
+	m.Center(a.s.Size())
 }
 
 // collapseSiblings ports collapse_siblings, ref/hmx.php 3253.
@@ -178,16 +205,14 @@ func expandSiblings(m *Map, id int) {
 
 func expandAllAction(a *App) {
 	a.m.ExpandAll()
-	w, h := a.s.Size()
-	Build(a.m, w, h)
-	a.m.Center(w, h)
+	a.build()
+	a.m.Center(a.s.Size())
 }
 
 func collapseAllAction(a *App) {
 	a.m.CollapseAll()
-	w, h := a.s.Size()
-	Build(a.m, w, h)
-	a.m.Center(w, h)
+	a.build()
+	a.m.Center(a.s.Size())
 }
 
 func save(a *App) {
@@ -249,3 +274,292 @@ func padRight(s string, n int) string {
 	}
 	return s
 }
+
+// {{{ hmx additions
+
+// insertNewSibling/insertNewChild port insert_new_node, ref/hmx.php 1623.
+func insertNewSibling(a *App) { insertNewNode(a, a.m.InsertSibling) }
+func insertNewChild(a *App)   { insertNewNode(a, a.m.InsertChild) }
+
+func insertNewNode(a *App, insert func() int) {
+	insert()
+	a.build()
+	a.draw()
+	a.m.Nodes[a.m.Active].Title = ""
+	editNodeInner(a, "")
+}
+
+// editNode ports edit_node, ref/hmx.php 1989.
+func editNode(a *App) {
+	n := a.m.Nodes[a.m.Active]
+	initial := n.Title
+	if (a.m.Active == a.m.Root && initial == "root") || initial == "NEW" {
+		initial = ""
+	}
+	editNodeInner(a, initial)
+}
+
+func editNodeInner(a *App, initial string) {
+	out, ok := a.readline(initial)
+	m := a.m
+	n := m.Nodes[m.Active]
+
+	if (!ok || out == "") && n.Title == "" && isLeaf(n) {
+		m.Delete()
+		m.PushChange()
+		a.build()
+		return
+	}
+	if !ok {
+		a.msg = "Editing cancelled"
+		return
+	}
+	n.Title = out
+	m.PushChange()
+	a.build()
+}
+
+// deleteNode ports delete_node_vh, ref/hmx.php 3093.
+func deleteNode(a *App) {
+	a.clip = a.m.Delete()
+	a.build()
+	a.msg = "Item(s) are cut and placed into the clipboard."
+}
+
+// yankNode ports yank_node, ref/hmx.php 3075.
+func yankNode(a *App) {
+	a.clip = a.m.Yank()
+	a.msg = "Item(s) are copied to the clipboard."
+}
+
+// pasteAsChildren/pasteAsSiblings port paste_sub_tree, ref/hmx.php 2897.
+func pasteAsChildren(a *App) {
+	a.m.Paste(a.clip, false)
+	a.build()
+}
+
+func pasteAsSiblings(a *App) {
+	a.m.Paste(a.clip, true)
+	a.build()
+}
+
+// moveNodeDown/moveNodeUp port move_node_down/up, ref/hmx.php 2298/2335.
+func moveNodeDown(a *App) {
+	a.m.MoveDown()
+	a.build()
+}
+
+func moveNodeUp(a *App) {
+	a.m.MoveUp()
+	a.build()
+}
+
+// undoAction ports undo, ref/hmx.php 2728.
+func undoAction(a *App) {
+	a.m.Undo()
+	a.build()
+}
+
+// search ports search, ref/hmx.php 2199.
+func search(a *App) {
+	q, ok := a.readline("")
+	a.query = q
+	if !ok || q == "" {
+		return
+	}
+	if !nextSearchResult(a) {
+		previousSearchResult(a)
+	}
+}
+
+// nextSearchResult/previousSearchResult port next_search_result/previous_search_result, ref/hmx.php 2222-2296.
+func nextSearchResult(a *App) bool     { return searchResult(a, true) }
+func previousSearchResult(a *App) bool { return searchResult(a, false) }
+
+func searchResult(a *App, forward bool) bool {
+	m := a.m
+	active := m.Nodes[m.Active]
+	cy := active.y + active.yo
+	query := strings.ToLower(a.query)
+
+	best, bestY, found := 0, 0, false
+	for id, n := range m.Nodes {
+		if id == 0 || n.y == -1 {
+			continue
+		}
+		ny := n.y + n.yo
+		if forward && ny <= cy {
+			continue
+		}
+		if !forward && ny >= cy {
+			continue
+		}
+		if !strings.Contains(strings.ToLower(n.Title), query) {
+			continue
+		}
+		if !found || (forward && ny < bestY) || (!forward && ny > bestY) {
+			bestY, best, found = ny, id, true
+		}
+	}
+	if !found {
+		return false
+	}
+	m.Active = best
+	return true
+}
+
+// readline ports magic_readline/show_line, ref/hmx.php 1678-1978.
+func (a *App) readline(title string) (string, bool) {
+	buf := []rune(title)
+	cursor := len(buf)
+	w, _ := a.s.Size()
+	shift := adjustShift(0, cursor, w)
+	a.showLine(buf, cursor, shift)
+
+	for {
+		ev, ok := a.s.PollEvent().(*tcell.EventKey)
+		if !ok {
+			continue
+		}
+		mod := ev.Modifiers()
+		switch ev.Key() {
+		case tcell.KeyEsc:
+			a.draw()
+			return "", false
+		case tcell.KeyEnter:
+			return strings.TrimSpace(string(buf)), true
+		case tcell.KeyUp, tcell.KeyHome, tcell.KeyCtrlA:
+			cursor = 0
+		case tcell.KeyDown, tcell.KeyEnd, tcell.KeyCtrlE:
+			cursor = len(buf)
+		case tcell.KeyRight:
+			if mod&tcell.ModCtrl != 0 {
+				cursor = wordRight(buf, cursor)
+			} else {
+				cursor = min(len(buf), cursor+1)
+			}
+		case tcell.KeyCtrlF:
+			cursor = min(len(buf), cursor+1)
+		case tcell.KeyLeft:
+			if mod&tcell.ModCtrl != 0 {
+				cursor = wordLeft(buf, cursor)
+			} else {
+				cursor = max(0, cursor-1)
+			}
+		case tcell.KeyCtrlB:
+			cursor = max(0, cursor-1)
+		case tcell.KeyCtrlW:
+			from := wordLeft(buf, cursor)
+			buf = rlDelete(buf, from, cursor)
+			cursor = from
+		case tcell.KeyBackspace, tcell.KeyBackspace2:
+			if mod&tcell.ModAlt != 0 {
+				from := wordLeft(buf, cursor)
+				buf = rlDelete(buf, from, cursor)
+				cursor = from
+			} else if cursor > 0 {
+				buf = rlDelete(buf, cursor-1, cursor)
+				cursor--
+			}
+		case tcell.KeyDelete:
+			if mod&tcell.ModCtrl != 0 {
+				to := wordRight(buf, cursor)
+				buf = rlDelete(buf, cursor, to)
+			} else if cursor < len(buf) {
+				buf = rlDelete(buf, cursor, cursor+1)
+			}
+		case tcell.KeyCtrlK:
+			buf = buf[:cursor]
+		case tcell.KeyCtrlU:
+			buf = buf[cursor:]
+			cursor = 0
+		case tcell.KeyTab:
+			buf = rlInsert(buf, cursor, []rune("  "))
+			cursor += 2
+		case tcell.KeyRune:
+			r := ev.Rune()
+			if mod&tcell.ModAlt != 0 {
+				switch r {
+				case 'b':
+					cursor = wordLeft(buf, cursor)
+				case 'f':
+					cursor = wordRight(buf, cursor)
+				case 'd':
+					to := wordRight(buf, cursor)
+					buf = rlDelete(buf, cursor, to)
+				}
+			} else {
+				buf = rlInsert(buf, cursor, []rune{r})
+				cursor++
+			}
+		}
+		w, _ = a.s.Size()
+		shift = adjustShift(shift, cursor, w)
+		a.showLine(buf, cursor, shift)
+	}
+}
+
+func (a *App) showLine(buf []rune, cursor, shift int) {
+	w, h := a.s.Size()
+	for i := 0; i < w; i++ {
+		r := ' '
+		if shift+i < len(buf) {
+			r = buf[shift+i]
+		}
+		st := styleActive
+		if shift+i == cursor {
+			st = st.Reverse(true)
+		}
+		a.s.SetContent(i, h-1, r, nil, st)
+	}
+	a.s.Show()
+}
+
+func adjustShift(shift, cursor, w int) int {
+	if cursor < shift {
+		shift = cursor
+	}
+	if w > 0 && cursor >= shift+w {
+		shift = cursor - w + 1
+	}
+	if shift < 0 {
+		shift = 0
+	}
+	return shift
+}
+
+// wordLeft/wordRight find the word boundary before/after cursor (skip spaces, skip word).
+func wordLeft(buf []rune, cursor int) int {
+	i := cursor
+	for i > 0 && buf[i-1] == ' ' {
+		i--
+	}
+	for i > 0 && buf[i-1] != ' ' {
+		i--
+	}
+	return i
+}
+
+func wordRight(buf []rune, cursor int) int {
+	i := cursor
+	for i < len(buf) && buf[i] != ' ' {
+		i++
+	}
+	for i < len(buf) && buf[i] == ' ' {
+		i++
+	}
+	return i
+}
+
+func rlDelete(buf []rune, from, to int) []rune {
+	return append(buf[:from], buf[to:]...)
+}
+
+func rlInsert(buf []rune, cursor int, ins []rune) []rune {
+	buf = append(buf, ins...)
+	copy(buf[cursor+len(ins):], buf[cursor:len(buf)-len(ins)])
+	copy(buf[cursor:], ins)
+	return buf
+}
+
+// }}}
