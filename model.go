@@ -12,6 +12,8 @@ type Node struct {
 	Parent    int
 	Children  []int
 	Collapsed bool
+
+	x, y, w, wl, lh, clh, h, yo, xo int
 }
 
 type snapshot struct {
@@ -26,6 +28,10 @@ type Map struct {
 	File     string
 	Modified bool
 	undo     []snapshot
+
+	Top, Left                              int
+	rows                                   [][]rune
+	mapWidth, mapHeight, mapTop, mapBottom int
 }
 
 // {{{ list <-> map conversion, ported from list_to_map/map_to_list in ref/hmx.php
@@ -449,6 +455,56 @@ func (m *Map) Undo() {
 	m.undo = m.undo[:len(m.undo)-1]
 	m.Nodes = last.nodes
 	m.Active = last.active
+}
+
+// }}}
+// {{{ tree state, ported from expand_all 3241, collapse_all 3322, collapse 3352, collapse_level 3376
+
+func isLeaf(n *Node) bool { return len(n.Children) == 0 }
+
+func (m *Map) ExpandAll() {
+	for _, n := range m.Nodes {
+		n.Collapsed = false
+	}
+}
+
+func (m *Map) CollapseAll() {
+	for id, n := range m.Nodes {
+		if !isLeaf(n) && id != 0 && id != m.Root {
+			n.Collapsed = true
+		}
+	}
+	m.Active = m.Root
+}
+
+func (m *Map) collapse(id, keep int) {
+	n := m.Nodes[id]
+	if isLeaf(n) {
+		return
+	}
+	if keep <= 0 {
+		n.Collapsed = true
+	} else {
+		n.Collapsed = false
+		for _, cid := range n.Children {
+			m.collapse(cid, keep-1)
+		}
+	}
+}
+
+func (m *Map) CollapseLevel(level int) {
+	m.collapse(m.Root, level)
+
+	var chain []int
+	for current := m.Active; current != m.Root; current = m.Nodes[current].Parent {
+		chain = append(chain, current)
+	}
+	for i := len(chain) - 1; i >= 0; i-- {
+		if id := chain[i]; m.Nodes[id].Collapsed {
+			m.Active = id
+			break
+		}
+	}
 }
 
 // }}}

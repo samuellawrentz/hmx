@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Regenerate goldens from the PHP reference only (testing.md). 120x40 tmux, one per fixture:
+# Regenerate goldens from the PHP reference only (testing.md). 120x40 tmux pane (own socket,
+# status bar off so the pane really is 40 rows), one per fixture:
 #   <name>.txt           after pressing 0 (expand all)
 #   <name>.collapsed.txt as opened
 set -eu
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
 d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
+printf 'set -g status off\n' > "$d/tmux.conf"
+tmux() { command tmux -L hmxgold -f "$d/tmux.conf" "$@"; }
 for f in "$repo"/test/fixtures/*.hmm; do
 	n=$(basename "$f" .hmm)
 	for mode in collapsed expanded; do
