@@ -15,3 +15,6 @@ Fork of h-m-m: one PHP file `hmm`, global `$mm`, flat functions, `$keybindings[k
 - `insert_new_sibling` shows `NEW` in the tree while the inline editor is open; tui asserts on that.
 - macOS has no `timeout`; smoke tests use tmux (`send-keys`, `capture-pane -p`), see `test/tui.sh`.
 - PHP `passthru`/`system` pipe the child's stdout, so `less` dumps and exits and `vim` refuses to start. Anything interactive goes through `run_in_tty()`, which redirects to `/dev/tty` when stdout is a terminal.
+
+## Config
+`config($mm, key, default)` resolves CLI `--key=value` → env → conf file → default. Conf file: `~/Library/Preferences/h-m-m/h-m-m.conf` on mac, `~/.config/h-m-m/h-m-m.conf` elsewhere, `key = value` lines. `map_dir` lives there. Manual smoke: `tmux new -d -s t -x 120 -y 30 "php hmm file.hmm"; tmux capture-pane -t t -p`.
