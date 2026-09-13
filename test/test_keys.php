@@ -1,7 +1,7 @@
 <?php
 require __DIR__.'/helpers.php';
 
-check(count(array_unique($keybindings)) === 27, 'distinct functions bound');
+check(count(array_unique($keybindings)) === 28, 'distinct functions bound');
 
 foreach ($keybindings as $key => $fn)
 	check(is_callable($fn), "callable: $fn");

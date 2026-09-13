@@ -72,6 +72,16 @@ body_edit()
 # missing map_dir is created and the empty list renders
 no_map_dir() { [ -d "$1/new" ] && has 'maps in' 'no maps'; }
 
+# 0 expands every branch, 1 collapses back to the root's children
+expand_collapse()
+{
+	screen | grep -q '\[+\]' || return 1
+	keys 0
+	lacks '[+]' || return 1
+	keys 1
+	has '[+]'
+}
+
 run open_map        backend.hmm open_map
 run follow_and_back backend.hmm follow_and_back
 run enter_on_plain  backend.hmm enter_on_plain
@@ -79,4 +89,5 @@ run list_screen     backend.hmm list_screen
 run extract         backend.hmm extract
 EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hmm body_edit
 run no_map_dir      ''          no_map_dir /new
+run expand_collapse backend.hmm expand_collapse
 exit $status

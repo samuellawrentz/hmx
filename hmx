@@ -308,6 +308,7 @@ $keybindings[" "]  = 'toggle_node';
 $keybindings['f'] = 'focus';
 
 $keybindings['0'] = 'expand_all';
+$keybindings['1'] = 'collapse_all';
 
 $keybindings['o'] = 'insert_new_sibling';
 $keybindings["\t"] = 'insert_new_child';
@@ -4188,7 +4189,7 @@ function list_screen()
 			usleep(20000);
 			$in = fread(STDIN, 16);
 		}
-		while (empty($in));
+		while ($in === '');
 
 		if ($in=='j' || $in==special_keys['arr_down'])
 			$cursor = min($cursor+1, count($rows)-1);
@@ -4291,7 +4292,7 @@ function monitor_key_presses(&$mm)
 		usleep(20000);
 		$in = fread(STDIN, 16);
 
-		if (empty($in))
+		if ($in === '')
 			continue;
 
 		if (isset($keybindings[$in]))

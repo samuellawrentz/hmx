@@ -26,7 +26,7 @@ bottom pane shows the body when the active node has one.
 | `h j k l` ↑↓←→ | move |
 | `Space` | collapse / expand |
 | `f` | focus: collapse others, center |
-| `0` | expand all |
+| `0` / `1` | expand all / collapse all |
 | `o` | new sibling |
 | `Tab` | new child |
 | `e` | edit title |
