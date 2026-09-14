@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hmx — terminal mind maps</title>
+<meta name="description" content="hmx: terminal mind maps. Many maps, one folder, plain text, links between them. A Go port of h-m-m.">
+<meta property="og:title" content="hmx — terminal mind maps">
+<meta property="og:description" content="Many maps, one folder, plain text, links between them.">
+<meta property="og:image" content="https://hmx.samuellawrentz.com/img/link.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23d98a00'/><text x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='%231b1d27'>h</text></svg>">
+<style>
+:root{--bg:#0b0f14;--panel:#1b1d27;--fg:#e6e1d6;--muted:#9a948a;--accent:#d98a00;--line:#2a2d3a;--link:#5aa9ff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+header{padding:20px 0;border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{font-weight:700;color:var(--accent);font-size:20px}
+nav a{color:var(--muted);margin-left:20px}
+.hero{padding:72px 0 40px;text-align:center}
+.hero h1{font-size:clamp(28px,5vw,48px);margin:0 0 12px;line-height:1.15}
+.hero h1 span{color:var(--accent)}
+.hero p{color:var(--muted);font-size:18px;max-width:640px;margin:0 auto 28px}
+.install{display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 18px;color:var(--fg);font-size:15px;margin-bottom:12px}
+.install b{color:var(--accent);font-weight:400}
+.sub{color:var(--muted);font-size:13px}
+.shot{width:100%;height:auto;border-radius:12px;border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.5);display:block}
+.hero .shot{margin-top:40px}
+section{padding:56px 0;border-top:1px solid var(--line)}
+h2{font-size:22px;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.card h3{margin:0 0 8px;font-size:16px;color:var(--accent)}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.card code{color:var(--fg)}
+.feature{display:grid;grid-template-columns:1fr 1.6fr;gap:32px;align-items:center;margin-bottom:56px}
+.feature:nth-child(even){grid-template-columns:1.6fr 1fr}
+.feature:nth-child(even) .text{order:2}
+.feature h3{margin:0 0 8px;font-size:18px}
+.feature p{color:var(--muted);margin:0 0 8px;font-size:15px}
+.feature:last-child{margin-bottom:0}
+kbd{background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font-size:13px;color:var(--fg)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{white-space:nowrap;width:1%}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 40px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 20px;overflow:auto;font-size:14px;line-height:1.5;margin:0}
+pre .c{color:var(--muted)}pre .l{color:var(--link)}pre .b{color:var(--accent)}
+footer{padding:40px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer a{color:var(--muted);text-decoration:underline}
+@media (max-width:760px){.feature,.feature:nth-child(even){grid-template-columns:1fr}.feature:nth-child(even) .text{order:0}nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="logo">hmx</div>
+  <nav><a href="#install">install</a><a href="#keys">keys</a><a href="#format">format</a><a href="https://github.com/samuellawrentz/hmx">github</a></nav>
+</div></header>
+
+<main>
+<div class="hero wrap">
+  <h1>Mind maps in the terminal.<br><span>Many maps, one folder, plain text.</span></h1>
+  <p>hmx is a keyboard-driven mind mapper. Every map is a tab-indented text file. Maps link to each other. A subtree can become its own map. Nothing else is stored.</p>
+  <div class="install"><b>$</b> go install github.com/samuellawrentz/hmx@latest</div>
+  <div class="sub">Single static binary. Go 1.26+. macOS and Linux. GPL-3.0.</div>
+  <img class="shot" src="img/link.png" alt="hmx showing the week map, opened from a link in the deep map; breadcrumb reads deep › week" width="1800" height="1198">
+</div>
+
+<section id="why"><div class="wrap">
+  <h2>What it is</h2>
+  <p class="lead">A Go port of <a href="https://github.com/nadrad/h-m-m">h-m-m</a> that adds the things one map cannot do.</p>
+  <div class="grid">
+    <div class="card"><h3>One folder of maps</h3><p>A list screen shows every <code>.hmm</code> in your map folder as a tree, nested by who links to whom. <code>inbox</code> is always on top.</p></div>
+    <div class="card"><h3>Links between maps</h3><p><code>[[map]]</code> or <code>[[map#node]]</code> in a node title. <kbd>Enter</kbd> follows it, <kbd>Backspace</kbd> comes back. A breadcrumb shows where you are.</p></div>
+    <div class="card"><h3>Extract a subtree</h3><p><kbd>Ctrl-E</kbd> moves the node and its children into a new map and leaves a link behind. Big maps stay small.</p></div>
+    <div class="card"><h3>Bodies via $EDITOR</h3><p>A node can carry a few lines of notes. <kbd>E</kbd> opens them in your editor; they show in a pane at the bottom while the node is selected.</p></div>
+    <div class="card"><h3>Plain text, git-friendly</h3><p>Tabs for depth, one node per line, <code>&gt;&nbsp;</code> for body lines. No ids, no index, no database. Sync with git or anything that moves files.</p></div>
+    <div class="card"><h3>Taskwarrior aware</h3><p><code>[[task:uuid]]</code> renders as ☐ or ☑, red when overdue. <kbd>Enter</kbd> on it opens <code>task info</code>.</p></div>
+  </div>
+</div></section>
+
+<section id="tour"><div class="wrap">
+  <h2>Tour</h2>
+  <p class="lead">Screens from the test fixtures, captured in a 120-column terminal.</p>
+
+  <div class="feature">
+    <div class="text"><h3>The list</h3><p><code>hmx</code> with no arguments opens your map folder. Node count and age per map. Maps linked from another map are indented under it.</p><p><kbd>/</kbd> filters by name, then by content. <kbd>n</kbd> new, <kbd>r</kbd> rename (rewrites inbound links), <kbd>d</kbd> delete.</p></div>
+    <img class="shot" src="img/list.png" alt="hmx list screen: inbox, week, and deep nested under week" width="1800" height="639">
+  </div>
+
+  <div class="feature">
+    <div class="text"><h3>The map</h3><p>The same layout engine as h-m-m, ported function by function and checked byte for byte against the original. Long titles wrap. <kbd>0</kbd> expands everything, <kbd>1</kbd> collapses everything, <kbd>f</kbd> focuses one branch.</p></div>
+    <img class="shot" src="img/map.png" alt="hmx map view of a 60-node map, fully expanded" width="1800" height="1050">
+  </div>
+
+  <div class="feature">
+    <div class="text"><h3>Bodies</h3><p>A node with notes shows <code>…</code> after its title and a pane at the bottom with the text. Edit with <kbd>E</kbd> in <code>$EDITOR</code>.</p></div>
+    <img class="shot" src="img/body.png" alt="hmx with a node selected whose body text shows in a bottom pane" width="1800" height="822">
+  </div>
+
+  <div class="feature">
+    <div class="text"><h3>Help</h3><p><kbd>?</kbd> lists every action and its key. There are 24 keys on the map and 7 on the list. Rebind any of them with <code>bind&lt;key&gt; = action</code> in the config file.</p></div>
+    <img class="shot" src="img/help.png" alt="hmx help screen listing actions and keys" width="1800" height="1058">
+  </div>
+</div></section>
+
+<section id="install"><div class="wrap">
+  <h2>Install</h2>
+  <p class="lead">Needs Go 1.26 or newer. The binary lands in <code>$(go env GOPATH)/bin</code>.</p>
+<pre><span class="c"># from the module proxy</span>
+go install github.com/samuellawrentz/hmx@latest
+
+<span class="c"># or from source</span>
+git clone https://github.com/samuellawrentz/hmx
+cd hmx &amp;&amp; go build -o hmx .
+
+<span class="c"># run</span>
+hmx                 <span class="c"># list of maps in your map folder</span>
+hmx notes.hmm       <span class="c"># open one file</span></pre>
+  <p class="lead" style="margin-top:32px">Config lives in <code>~/.config/hmx/config</code>, one <code>key = value</code> per line. Any key can also come from the environment as <code>hmx_&lt;key&gt;</code> or the command line as <code>--key=value</code>.</p>
+<pre>map_dir = ~/maps
+<span class="c"># rebind: bind&lt;key&gt; = action</span>
+bindx = expand_all</pre>
+</div></section>
+
+<section id="keys"><div class="wrap">
+  <h2>Keys</h2>
+  <p class="lead">Map screen. Arrow keys work everywhere <kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd> do.</p>
+  <div class="keys">
+    <table>
+      <tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>move</td></tr>
+      <tr><td><kbd>Space</kbd></td><td>collapse / expand node</td></tr>
+      <tr><td><kbd>0</kbd> / <kbd>1</kbd></td><td>expand all / collapse all</td></tr>
+      <tr><td><kbd>f</kbd></td><td>focus: collapse others, center</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>follow link, else new sibling</td></tr>
+      <tr><td><kbd>Backspace</kbd></td><td>back to previous map</td></tr>
+      <tr><td><kbd>o</kbd> / <kbd>Tab</kbd></td><td>new sibling / new child</td></tr>
+      <tr><td><kbd>e</kbd> / <kbd>E</kbd></td><td>edit title / edit body</td></tr>
+      <tr><td><kbd>d</kbd> <kbd>y</kbd> <kbd>p</kbd> <kbd>P</kbd></td><td>cut, yank, paste as children, paste as siblings</td></tr>
+    </table>
+    <table>
+      <tr><td><kbd>J</kbd> / <kbd>K</kbd></td><td>move node down / up</td></tr>
+      <tr><td><kbd>Ctrl-E</kbd></td><td>extract subtree to its own map</td></tr>
+      <tr><td><kbd>/</kbd> <kbd>n</kbd> <kbd>N</kbd></td><td>search, next, previous</td></tr>
+      <tr><td><kbd>u</kbd></td><td>undo</td></tr>
+      <tr><td><kbd>s</kbd></td><td>save</td></tr>
+      <tr><td><kbd>q</kbd></td><td>back to list, saves if modified</td></tr>
+      <tr><td><kbd>?</kbd></td><td>help</td></tr>
+      <tr><td><kbd>Ctrl-C</kbd></td><td>quit</td></tr>
+    </table>
+  </div>
+</div></section>
+
+<section id="format"><div class="wrap">
+  <h2>File format</h2>
+  <p class="lead">Tabs for depth. One node per line. Body lines start with <code>&gt;&nbsp;</code> under their node. Links are plain text in the title.</p>
+<pre>week
+	planning
+		sprint goals draft
+		capacity check
+	backlog
+		triage new tickets
+		<span class="b">&gt; ask for repro steps before assigning</span>
+	<span class="l">[[deep]]</span>
+	<span class="l">[[deep#Retry policy draft]]</span>
+	release checklist <span class="l">[[task:3f9a2c1e]]</span></pre>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  hmx is free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a>. Layout engine and key model from <a href="https://github.com/nadrad/h-m-m">h-m-m</a> by nadrad. Source on <a href="https://github.com/samuellawrentz/hmx">GitHub</a>.
+</div></footer>
+</body>
+</html>
