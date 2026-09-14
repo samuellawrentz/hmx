@@ -1,4 +1,4 @@
-module hmx
+module github.com/samuellawrentz/hmx
 
 go 1.26.3
 
