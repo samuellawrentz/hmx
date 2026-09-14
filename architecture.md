@@ -13,7 +13,7 @@ links.go     parse [[map#node]] / [[task:uuid8]], follow, back (nav stack), conf
 list.go      list screen: scan map_dir, inbox first, mtime, node count, filter, content-grep fallback, rename (rewrites inbound links)
 extract.go   extract subtree to <map>-<slug>.hmm
 body.go      $EDITOR round-trip (suspend tcell), body pane
-tasks.go     taskwarrior stage A: one `task export`, ☐/☑/overdue
+tasks.go     taskwarrior: one `task export`, ☐/☑/overdue; `t` picker links/creates (annotate, add)
 help.go      help screen generated from the key table
 ```
 
@@ -55,4 +55,4 @@ main
 
 ## Invariants (unchanged)
 - One map in memory. File on disk is the truth. Every write goes through `Map.Save`; extract and rename are the only functions that write other files.
-- Taskwarrior is read-only.
+- Taskwarrior writes: `annotate` on link, `add` on create. Nothing else.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2)
+# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2), 9 scenarios
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 bin="${HMX_BIN:-./hmx}"
@@ -15,7 +15,7 @@ run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
 	tmux kill-session -t hmxtest 2>/dev/null
-	tmux new-session -d -c "$repo" -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
+	tmux new-session -d -c "$repo" -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }${FAKE_TASK:+PATH=$FAKE_TASK:\$PATH }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
 	for _ in $(seq 50); do screen | grep -q '[^[:space:]]' && break; sleep 0.1; done   # first exec of a fresh build is slow on macOS
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
 	tmux kill-session -t hmxtest 2>/dev/null
@@ -83,6 +83,18 @@ expand_collapse()
 	has '[+]'
 }
 
+# t opens the task picker on the active node; Enter links the top (most urgent) task
+task_picker()
+{
+	keys l
+	keys t
+	sleep 0.3
+	has 'fix login' || return 1
+	keys Enter
+	sleep 0.3
+	has '[[task:'
+}
+
 run open_map        backend.hmm open_map
 run follow_and_back backend.hmm follow_and_back
 run enter_on_plain  backend.hmm enter_on_plain
@@ -91,4 +103,11 @@ run extract         backend.hmm extract
 EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hmm body_edit
 run no_map_dir      ''          no_map_dir /new
 run expand_collapse backend.hmm expand_collapse
+
+FAKE_TASK=$(mktemp -d)
+printf '[{"uuid":"aaaaaaaa-0000-0000-0000-000000000000","description":"write spec","project":"hmx","urgency":3.1},
+{"uuid":"bbbbbbbb-0000-0000-0000-000000000000","description":"fix login","project":"web","urgency":9.5}]' > "$FAKE_TASK/pending.json"
+printf '#!/bin/sh\ncase "$*" in *export*) /bin/cat %s/pending.json ;; esac\n' "$FAKE_TASK" > "$FAKE_TASK/task"
+chmod +x "$FAKE_TASK/task"
+run task_picker backend.hmm task_picker
 exit $status

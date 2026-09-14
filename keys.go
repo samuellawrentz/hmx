@@ -50,6 +50,7 @@ var actions = map[string]func(*App){
 	"go_back":                (*App).goBack,
 	"edit_body":              (*App).editBody,
 	"extract_to_map":         extractToMap,
+	"task_picker":            taskPicker,
 }
 
 var mapKeys = map[string]string{
@@ -87,6 +88,7 @@ var mapKeys = map[string]string{
 	"Enter":      "enter_key",
 	"Backspace":  "go_back",
 	"Backspace2": "go_back",
+	"t":          "task_picker",
 }
 
 // changeActiveNode ports change_active_node, ref/hmx.php 2763-2890.
@@ -265,6 +267,7 @@ func help(a *App) {
 	}
 
 	putStr(a.s, 0, breakpoint+2, "list screen: j/k move, Enter open, n new, r rename, d delete, / filter, q quit", tcell.StyleDefault)
+	putStr(a.s, 0, breakpoint+3, "task picker (t): j/k move, Enter link, n create from title, / filter, q cancel", tcell.StyleDefault)
 
 	w, h := a.s.Size()
 	putMessage(a.s, w, h, "Press any key to exit this help screen.")

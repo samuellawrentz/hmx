@@ -63,6 +63,7 @@ Map:
 | `Enter` | node has a link → follow it. Else → new sibling |
 | `Backspace` | back to previous map |
 | `ctrl+e` | extract subtree to its own map |
+| `t` | task picker: link or create a Taskwarrior task |
 | `s` | save |
 | `q` | back to list, saves if modified |
 | `?` | help |
@@ -76,7 +77,9 @@ One `.hmm` per map, readable by upstream h-m-m and by `cat`:
 - `[[task:uuid8]]` marks a Taskwarrior task by the first 8 characters of its uuid.
 
 ## Taskwarrior
-Read-only. When a map opens, hmx runs one `task rc.context=none <uuids> export` for every `[[task:uuid8]]` in it and renders `☐` pending, `☑` done, red when overdue. Enter on such a node shows `task <uuid> info` in `$PAGER`. Without a `task` binary everything renders as plain `☐`.
+When a map opens, hmx runs one `task rc.context=none <uuids> export` for every `[[task:uuid8]]` in it and renders `☐` pending, `☑` done, red when overdue. Enter on such a node shows `task <uuid> info` in `$PAGER`. Without a `task` binary everything renders as plain `☐`.
+
+`t` on a node opens a picker over pending tasks (description, project, due, by urgency). Enter links the task: the title becomes `<description> [[task:uuid8]]` and the task gets the annotation `map: <map>#<title>`. `n` creates a task from the node title and links it. Nothing else writes to Taskwarrior.
 
 ## Credits
 Based on [h-m-m](https://github.com/nadrad/h-m-m) by nadrad. GPL-3, see [LICENSE](LICENSE).

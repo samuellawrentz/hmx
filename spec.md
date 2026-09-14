@@ -18,6 +18,16 @@
 | `/` | filter |
 | `q` | quit |
 
+Task picker (`t` on a map node): same screen, rows are pending tasks (`description`, `project`, `due`) by urgency desc, `/` filters description and project.
+
+| key | action |
+|---|---|
+| `j k` ↑↓ | move |
+| `Enter` | link: title becomes `<description> [[task:uuid8]]` (an existing link is replaced, rest of the title kept), task annotated `map: <map>#<title>` |
+| `n` | create a task from the node title, then link it |
+| `/` | filter |
+| `q` | cancel |
+
 ### Map
 Existing h-m-m view plus: breadcrumb with stack depth, `[[..]]` titles blue, `…` amber when a body exists,
 bottom pane shows the body when the active node has one.
@@ -41,6 +51,7 @@ bottom pane shows the body when the active node has one.
 | `Enter` | node has a link → follow it. Else → new sibling |
 | `Backspace` | back to previous map |
 | `ctrl+e` | extract subtree to its own map |
+| `t` | task picker: link or create a Taskwarrior task |
 | `s` | save |
 | `q` | back to list, saves if modified |
 | `?` | help |
@@ -80,9 +91,10 @@ auth
 Stage A, read-only: `[[task:uuid8]]` in a title. One `task rc.context=none <uuids> export` at map open.
 Render `☐` pending, `☑` done, red when overdue. Enter → `task <uuid> info` in a pager.
 
-Stage B, only if A is used daily: `t` picker over pending tasks (list screen reused); Enter links,
-title becomes the task description, task gets annotation `map: <map>#<node>`. `n` in picker creates from title.
-`T` marks done. Writes use uuid + `rc.confirmation=off rc.bulk=0 rc.verbose=nothing`.
+Stage B: `t` picker over pending tasks (list screen reused); Enter links, title becomes the task description,
+task gets annotation `map: <map>#<node>`. `n` in picker creates from title (`add`, uuid via `+LATEST _uuids`).
+Writes use uuid + `rc.confirmation=off rc.verbose=nothing`. `task` missing or failing → one-line message, node untouched.
+Later, only if B is used daily: `T` marks done.
 
 ## Config
 `map_dir` (default `~/maps`). Everything cut from the keymap is bindable via the config file (`~/.config/hmx/config`, or `$XDG_CONFIG_HOME/hmx/config`).

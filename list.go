@@ -150,26 +150,34 @@ func ageStr(mt time.Time) string {
 }
 
 func (a *App) drawList(rows []MapInfo, cursor int, filter string) {
-	a.s.Clear()
-	w, h := a.s.Size()
 	header := "maps in " + a.mapDir
 	if filter != "" {
 		header += "  /" + filter
 	}
-	putStr(a.s, 0, 0, header, tcell.StyleDefault)
-	if len(rows) == 0 {
-		msg := "no maps"
-		if filter != "" {
-			msg = "no match for /" + filter
-		}
-		putStr(a.s, 0, 2, msg, tcell.StyleDefault)
+	empty := "no maps"
+	if filter != "" {
+		empty = "no match for /" + filter
 	}
-	for i, r := range rows {
+	var lines []string
+	for _, r := range rows {
+		lines = append(lines, padRight(strings.Repeat("  ", r.Depth)+r.Name, 32)+fmt.Sprintf("%5d  %4s", r.Count, ageStr(r.Mtime)))
+	}
+	a.drawRows(header, lines, cursor, empty)
+}
+
+// drawRows renders a header row, an optional empty-state message, and a cursor-highlighted list of lines.
+func (a *App) drawRows(header string, lines []string, cursor int, empty string) {
+	a.s.Clear()
+	w, h := a.s.Size()
+	putStr(a.s, 0, 0, header, tcell.StyleDefault)
+	if len(lines) == 0 {
+		putStr(a.s, 0, 2, empty, tcell.StyleDefault)
+	}
+	for i, line := range lines {
 		st := tcell.StyleDefault
 		if i == cursor {
 			st = styleActive
 		}
-		line := padRight(strings.Repeat("  ", r.Depth)+r.Name, 32) + fmt.Sprintf("%5d  %4s", r.Count, ageStr(r.Mtime))
 		putStr(a.s, 0, 2+i, line, st)
 	}
 	putMessage(a.s, w, h, a.msg)
