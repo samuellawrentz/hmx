@@ -10,7 +10,7 @@ import (
 // <name>.collapsed.txt as opened (collapse_all + collapse_level 1, centred on root),
 // <name>.txt after pressing 0 (expand_all, centred). Compared row by row, trailing blanks ignored.
 func TestGolden(t *testing.T) {
-	for _, name := range []string{"backend", "infra", "todo", "nixie"} {
+	for _, name := range []string{"backend", "infra", "week", "deep"} {
 		for _, expanded := range []bool{false, true} {
 			file := "test/golden/" + name + ".collapsed.txt"
 			if expanded {

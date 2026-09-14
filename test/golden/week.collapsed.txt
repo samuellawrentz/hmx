@@ -1,0 +1,40 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+              ╭── planning  [+]
+              │
+              ├── backlog  [+]
+              │
+              ├── retro notes  [+]
+              │
+              ├── ✗ carryover items from last week  [+]
+   week ──────┤
+              ├── [[deep]]
+              │
+              ├── standup notes  [+]
+              │
+              ├── risk log  [+]
+              │
+              ╰── misc  [+]
+
+
+
+
+
+
+
+
+
+
+
+

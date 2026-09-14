@@ -98,8 +98,8 @@ func TestLoadSaveNodeCount(t *testing.T) {
 	if n := NodeCount(f); n != 5 {
 		t.Errorf("count=%d", n)
 	}
-	if n := NodeCount("test/fixtures/nixie.hmm"); n != 60 {
-		t.Errorf("nixie count=%d", n)
+	if n := NodeCount("test/fixtures/deep.hmm"); n != 60 {
+		t.Errorf("deep count=%d", n)
 	}
 	m, err = Load(filepath.Join(d, "missing.hmm"))
 	if err != nil || m.Root != 1 || m.Nodes[1].Title != "missing" || len(m.Nodes[1].Children) != 0 {

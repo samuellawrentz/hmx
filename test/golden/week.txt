@@ -1,0 +1,40 @@
+                                 │
+              ╭── planning ──────┼── capacity check
+              │                  │
+              │                  ╰── dependency review
+              │
+              │                 ╭── triage new tickets …
+              │                 │
+              ├── backlog ──────┼── prioritize tech debt
+              │                 │
+              │                 ╰── groom backlog with team
+              │
+              │                     ╭── what went well
+              │                     │
+              ├── retro notes ──────┼── what needs improvement
+              │                     │
+              │                     ╰── action items from last retro
+              │
+              │                                          ╭── unfinished code review
+              │                                          │
+   week ──────┼── ✗ carryover items from last week ──────┼── pending deploy approval
+              │                                          │
+              │                                          ╰── outstanding test failures
+              │
+              ├── [[deep]]
+              │
+              │                       ╭── blockers reported
+              │                       │
+              ├── standup notes ──────┼── daily sync summary
+              │                       │
+              │                       ╰── timezone overlap notes
+              │
+              │                  ╭── vendor delay risk
+              │                  │
+              ├── risk log ──────┼── capacity risk flagged
+              │                  │
+              │                  ╰── timeline slip risk
+              │
+              │              ╭── office supplies note
+              ╰── misc ──────┤
+                             ╰── calendar cleanup

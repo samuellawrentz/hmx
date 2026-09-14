@@ -1,0 +1,62 @@
+deep
+	Backend services roadmap and integration touchpoints for release
+		API contract review
+			Schema migration checklist
+				Investigate whether the pagination cursor drifts under high write concurrency during nightly batch jobs
+			Rate limit tuning notes
+		Service ownership matrix update
+			Timeout handling edge cases
+		Retry policy draft
+	Testing coverage notes
+		Unit test gaps
+		> need coverage for edge case inputs on the validation layer
+		✗ Flaky test needs investigation before next release
+		Integration test matrix
+			Mock server setup
+			Contract test failures
+		Regression suite runtime
+			Parallelization plan
+		Snapshot test flakiness
+	✗ Blocked items requiring follow up before merge into staging
+		Dependency upgrade blocked
+		Design review pending
+			Accessibility check outstanding
+			Long title leaf explaining why the review keeps getting rescheduled across multiple sprint cycles due to reviewer availability
+		Legal sign-off missing
+		Localization strings incomplete
+			Missing translations list
+		Performance budget exceeded
+	Documentation backlog items
+		[[week]]
+		Onboarding guide draft
+			Setup steps missing
+		API reference gaps
+			Missing examples section
+		Changelog needs update
+		Glossary terms review
+			Terminology inconsistencies
+	✓ Completed migration validation and rollout checklist review
+		Data integrity checks passed
+		Rollback plan archived
+			Verified against staging snapshot
+		Sign-off collected from stakeholders
+		Post migration monitoring
+			Alert thresholds tuned
+		Cleanup of temporary migration scripts
+	Infrastructure and deployment pipeline notes
+		Container image size creeping up
+		> switch base image to slim variant next sprint
+		Deploy pipeline retries
+		Secrets rotation overdue
+			Rotation schedule draft
+		Autoscaling thresholds
+		Health check flakiness
+		Load balancer config drift
+	Open questions for next planning cycle
+		See [[week#planning]] for context
+		Resourcing gaps identified
+		Timeline risk assessment
+			Dependency on external team unresolved
+		Budget approval pending
+		Scope creep concerns
+		Stakeholder alignment meeting notes

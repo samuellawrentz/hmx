@@ -1,0 +1,30 @@
+week
+	planning
+		sprint goals draft
+		capacity check
+		dependency review
+	backlog
+		triage new tickets
+		> pull list from support queue before Monday standup
+		prioritize tech debt
+		groom backlog with team
+	retro notes
+		what went well
+		what needs improvement
+		action items from last retro
+	✗ carryover items from last week
+		unfinished code review
+		pending deploy approval
+		outstanding test failures
+	[[deep]]
+	standup notes
+		blockers reported
+		daily sync summary
+		timezone overlap notes
+	risk log
+		vendor delay risk
+		capacity risk flagged
+		timeline slip risk
+	misc
+		office supplies note
+		calendar cleanup

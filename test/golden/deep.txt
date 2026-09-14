@@ -1,0 +1,40 @@
+              │                                ╰── Snapshot test flakiness
+              │
+              │                                   ╭── Dependency upgrade blocked
+              │                                   │
+              │                                   │                               ╭── Accessibility check outstanding
+              │                                   │                               │
+              │                                   ├── Design review pending ──────╰── Long title leaf explaining why the
+              │   ✗ Blocked items                 │                                   rescheduled across multiple sprint
+              ├── requiring follow up       ──────┤                                   reviewer availability
+              │   before merge into staging       │
+              │                                   ├── Legal sign-off missing
+              │                                   │
+              │                                   ├── Localization strings incomplete ───────── Missing translations lis
+              │                                   │
+              │                                   ╰── Performance budget exceeded
+              │
+              │                                     ╭── [[week]]
+              │                                     │
+              │                                     ├── Onboarding guide draft ───────── Setup steps missing
+   deep ──────┤                                     │
+              ├── Documentation backlog items ──────┼── API reference gaps ───────── Missing examples section
+              │                                     │
+              │                                     ├── Changelog needs update
+              │                                     │
+              │                                     ╰── Glossary terms review ───────── Terminology inconsistencies
+              │
+              │                                ╭── Data integrity checks passed
+              │                                │
+              │                                ├── Rollback plan archived ───────── Verified against staging snapshot
+              │   ✓ Completed migration        │
+              ├── validation and rollout ──────┼── Sign-off collected from stakeholders
+              │   checklist review             │
+              │                                ├── Post migration monitoring ───────── Alert thresholds tuned
+              │                                │
+              │                                ╰── Cleanup of temporary migration scripts
+              │
+              │                                   ╭── Container image size creeping up …
+              │                                   │
+              │                                   ├── Deploy pipeline retries
+              │                                   │
