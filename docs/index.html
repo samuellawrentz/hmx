@@ -3,11 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hmx — terminal mind maps</title>
-<meta name="description" content="hmx: terminal mind maps. Many maps, one folder, plain text, links between them. A Go port of h-m-m.">
+<title>hmx — terminal mind maps in plain text | a keyboard-driven CLI alternative to Whimsical, XMind and FreeMind</title>
+<meta name="description" content="hmx is a free, open source mind mapping tool for the terminal. Plain text .hmm files, vim-style keys, links between maps, subtree extraction, Taskwarrior links. A CLI alternative to Whimsical, XMind, FreeMind, MindNode and Obsidian canvas. Single Go binary.">
+<meta name="keywords" content="mind map, mind mapping, terminal mind map, CLI mind map, TUI mind map, plain text mind map, markdown mind map, whimsical alternative, xmind alternative, freemind alternative, mindnode alternative, miro alternative, obsidian mind map, vim mind map, keyboard mind mapping, outliner, tree editor, h-m-m, hmx, go, tcell, open source, linux, macos, taskwarrior">
+<link rel="canonical" href="https://hmx.samuellawrentz.com/">
+<meta name="robots" content="index,follow">
 <meta property="og:title" content="hmx — terminal mind maps">
 <meta property="og:description" content="Many maps, one folder, plain text, links between them.">
 <meta property="og:image" content="https://hmx.samuellawrentz.com/img/link.png">
+<meta property="og:url" content="https://hmx.samuellawrentz.com/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="hmx — terminal mind maps in plain text">
+<meta name="twitter:description" content="Many maps, one folder, plain text, links between them. Free and open source.">
+<meta name="twitter:image" content="https://hmx.samuellawrentz.com/img/link.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"hmx","applicationCategory":"ProductivityApplication","operatingSystem":"macOS, Linux","url":"https://hmx.samuellawrentz.com/","downloadUrl":"https://github.com/samuellawrentz/hmx","license":"https://www.gnu.org/licenses/gpl-3.0.html","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Terminal mind mapping tool. Plain text files, keyboard driven, links between maps.","author":{"@type":"Person","name":"Samuel Lawrentz","url":"https://github.com/samuellawrentz"},"codeRepository":"https://github.com/samuellawrentz/hmx","programmingLanguage":"Go"}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23d98a00'/><text x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='%231b1d27'>h</text></svg>">
 <style>
 :root{--bg:#0b0f14;--panel:#1b1d27;--fg:#e6e1d6;--muted:#9a948a;--accent:#d98a00;--line:#2a2d3a;--link:#5aa9ff}
@@ -58,7 +68,7 @@ footer a{color:var(--muted);text-decoration:underline}
 <body>
 <header><div class="wrap">
   <div class="logo">hmx</div>
-  <nav><a href="#install">install</a><a href="#keys">keys</a><a href="#format">format</a><a href="https://github.com/samuellawrentz/hmx">github</a></nav>
+  <nav><a href="#compare">compare</a><a href="#install">install</a><a href="#keys">keys</a><a href="#format">format</a><a href="https://github.com/samuellawrentz/hmx">github</a></nav>
 </div></header>
 
 <main>
@@ -106,6 +116,18 @@ footer a{color:var(--muted);text-decoration:underline}
     <div class="text"><h3>Help</h3><p><kbd>?</kbd> lists every action and its key. There are 24 keys on the map and 7 on the list. Rebind any of them with <code>bind&lt;key&gt; = action</code> in the config file.</p></div>
     <img class="shot" src="img/help.png" alt="hmx help screen listing actions and keys" width="1800" height="1058">
   </div>
+</div></section>
+
+<section id="compare"><div class="wrap">
+  <h2>Compared to Whimsical, XMind, FreeMind and friends</h2>
+  <p class="lead">Those are good tools. hmx is for people who live in a terminal and want their maps in git.</p>
+  <table>
+    <tr><td>Whimsical, Miro, MindMeister</td><td>Browser canvas, mouse first, your data on their servers. hmx is offline, keyboard only, and the file is yours.</td></tr>
+    <tr><td>XMind, MindNode, FreeMind</td><td>Desktop apps with their own XML or binary format. hmx uses tab-indented text you can read in <code>cat</code>, grep, diff, and edit in any editor.</td></tr>
+    <tr><td>Obsidian canvas, Logseq</td><td>Great outliners, heavy apps. hmx is one 5 MB binary that starts in milliseconds and does one thing: trees with links between them.</td></tr>
+    <tr><td>h-m-m</td><td>The original. hmx keeps its layout and keys, drops PHP for Go, and adds the list screen, cross-map links, extract, bodies, and Taskwarrior.</td></tr>
+  </table>
+  <p class="lead" style="margin-top:24px">Works anywhere a terminal works: over ssh, inside tmux, on a Raspberry Pi. Pairs with vim, Taskwarrior, and git.</p>
 </div></section>
 
 <section id="install"><div class="wrap">
