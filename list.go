@@ -14,6 +14,7 @@ import (
 type MapInfo struct {
 	Name, File string
 	Count      int
+	Depth      int
 	Mtime      time.Time
 }
 
@@ -23,7 +24,7 @@ func listRows(dir, filter string) []MapInfo {
 	for _, f := range files {
 		name := strings.TrimSuffix(filepath.Base(f), ".hmm")
 		info, err := os.Stat(f)
-		if err != nil || (filter != "" && !strings.Contains(strings.ToLower(name), strings.ToLower(filter))) {
+		if err != nil {
 			continue
 		}
 		rows = append(rows, MapInfo{Name: name, File: f, Count: NodeCount(f), Mtime: info.ModTime()})
@@ -34,7 +35,79 @@ func listRows(dir, filter string) []MapInfo {
 		}
 		return rows[i].Mtime.After(rows[j].Mtime)
 	})
-	return rows
+	rows = treeOrder(rows)
+	if filter == "" {
+		return rows
+	}
+	return filterTree(rows, filter)
+}
+
+// treeOrder nests maps by links: A parents B if A's file contains [[B]] or [[B#,
+// first such A in flat order wins. Roots first (flat order), then children recursively;
+// anything a cycle keeps unplaced is emitted at depth 0 in a final flat-order pass.
+func treeOrder(rows []MapInfo) []MapInfo {
+	content := make([]string, len(rows))
+	for i, r := range rows {
+		b, _ := os.ReadFile(r.File)
+		content[i] = string(b)
+	}
+	parent := make([]int, len(rows))
+	for i, b := range rows {
+		parent[i] = -1
+		for j := range rows {
+			if i != j && (strings.Contains(content[j], "[["+b.Name+"]]") || strings.Contains(content[j], "[["+b.Name+"#")) {
+				parent[i] = j
+				break
+			}
+		}
+	}
+	placed := make([]bool, len(rows))
+	var out []MapInfo
+	var walk func(i, depth int)
+	walk = func(i, depth int) {
+		placed[i] = true
+		rows[i].Depth = depth
+		out = append(out, rows[i])
+		for c := range rows {
+			if parent[c] == i && !placed[c] {
+				walk(c, depth+1)
+			}
+		}
+	}
+	for pass := 0; pass < 2; pass++ { // roots, then whatever a cycle left unplaced
+		for i := range rows {
+			if !placed[i] && (pass == 1 || parent[i] == -1) {
+				walk(i, 0)
+			}
+		}
+	}
+	return out
+}
+
+// filterTree keeps rows matching filter (case-insensitive substring) plus their ancestors.
+func filterTree(rows []MapInfo, filter string) []MapInfo {
+	q := strings.ToLower(filter)
+	keep := make([]bool, len(rows))
+	for i, r := range rows {
+		if !strings.Contains(strings.ToLower(r.Name), q) {
+			continue
+		}
+		keep[i] = true
+		depth := r.Depth
+		for j := i - 1; j >= 0 && depth > 0; j-- {
+			if rows[j].Depth < depth {
+				keep[j] = true
+				depth = rows[j].Depth
+			}
+		}
+	}
+	var out []MapInfo
+	for i, r := range rows {
+		if keep[i] {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 func renameMap(dir, old, new string) (int, bool) {
@@ -96,7 +169,7 @@ func (a *App) drawList(rows []MapInfo, cursor int, filter string) {
 		if i == cursor {
 			st = styleActive
 		}
-		line := padRight(r.Name, 32) + fmt.Sprintf("%5d  %4s", r.Count, ageStr(r.Mtime))
+		line := padRight(strings.Repeat("  ", r.Depth)+r.Name, 32) + fmt.Sprintf("%5d  %4s", r.Count, ageStr(r.Mtime))
 		putStr(a.s, 0, 2+i, line, st)
 	}
 	putMessage(a.s, w, h, a.msg)

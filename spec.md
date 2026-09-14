@@ -4,8 +4,9 @@
 
 ### List (no file argument)
 - Rows: `~/maps/*.hmm`. `inbox` pinned first, then mtime desc. Columns: name, node count, age.
+- Rows nest by links: a map is indented two spaces under the first map (in row order) whose file contains `[[map]]` or `[[map#`; maps nothing links to are roots; a cycle no root reaches is appended at root level. Each map appears once, so the cursor stays flat.
 - Node count = lines not starting with the body sigil.
-- `/` filters names live. Enter on the filter with no name hit → `grep -il` contents, open the map with in-map search pre-filled.
+- `/` filters names live, keeping matches and their ancestors. Enter on the filter with no name hit → `grep -il` contents, open the map with in-map search pre-filled.
 
 | key | action |
 |---|---|

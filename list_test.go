@@ -25,18 +25,18 @@ func listDir(t *testing.T) string {
 func names(rows []MapInfo) string {
 	var s []string
 	for _, r := range rows {
-		s = append(s, r.Name)
+		s = append(s, strings.Repeat(" ", r.Depth)+r.Name)
 	}
 	return strings.Join(s, ",")
 }
 
 func TestListRows(t *testing.T) {
 	d := listDir(t)
-	rows := listRows(d, "")
-	if names(rows) != "inbox,c,b,a" {
+	rows := listRows(d, "") // a links [[b]], so b nests under a
+	if names(rows) != "inbox,c,a, b" {
 		t.Errorf("order %s", names(rows))
 	}
-	if names(listRows(d, "b")) != "inbox,b" {
+	if names(listRows(d, "b")) != "inbox,a, b" { // matches plus their ancestors
 		t.Errorf("filter %s", names(listRows(d, "b")))
 	}
 	if rows[1].Count != 2 {
@@ -44,6 +44,31 @@ func TestListRows(t *testing.T) {
 	}
 	if len(listRows(filepath.Join(d, "none"), "")) != 0 {
 		t.Error("missing dir → no rows")
+	}
+}
+
+// nesting is derived from links: a map sits under the first map (row order) whose file links to it,
+// roots are maps nothing links to, a cycle that no root reaches is appended at root level
+func TestListTree(t *testing.T) {
+	d := t.TempDir()
+	files := map[string]string{
+		"root": "root\n\tsee [[kid1]]\n\t> and [[kid2#x]]\n",
+		"kid1": "kid1\n\tback to [[root]]\n", // link back to root does not re-parent root
+		"kid2": "kid2\n",
+		"cyc1": "cyc1\n\t[[cyc2]]\n",
+		"cyc2": "cyc2\n\t[[cyc1]]\n",
+	}
+	for i, n := range []string{"root", "kid1", "kid2", "cyc1", "cyc2"} { // mtime desc = this order
+		f := filepath.Join(d, n+".hmm")
+		os.WriteFile(f, []byte(files[n]), 0644)
+		mt := time.Now().Add(-time.Duration(100*i) * time.Second)
+		os.Chtimes(f, mt, mt)
+	}
+	if got := names(listRows(d, "")); got != "root, kid1, kid2,cyc1, cyc2" {
+		t.Errorf("tree %s", got)
+	}
+	if got := names(listRows(d, "kid2")); got != "root, kid2" {
+		t.Errorf("filter keeps ancestors %s", got)
 	}
 }
 
@@ -87,12 +112,12 @@ func TestListScreen(t *testing.T) {
 			s.InjectKey(k, 0, 0)
 		}
 	}
-	inject("jj", tcell.KeyEnter)
+	inject("jjj", tcell.KeyEnter) // rows: inbox, c, a, b
 	if f := a.listScreen(); filepath.Base(f) != "b.hmm" {
-		t.Errorf("jj Enter → %s", f)
+		t.Errorf("jjj Enter → %s", f)
 	}
-	inject("/b", tcell.KeyEnter)
-	inject("j", tcell.KeyEnter)
+	inject("/b", tcell.KeyEnter) // rows: inbox, a, b
+	inject("jj", tcell.KeyEnter)
 	if f := a.listScreen(); filepath.Base(f) != "b.hmm" {
 		t.Errorf("filter then open → %s", f)
 	}

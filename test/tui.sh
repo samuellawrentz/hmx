@@ -54,10 +54,10 @@ list_screen()
 	printf 'inbox\n' > "$1/inbox.hmm"
 	keys q
 	screen | grep -A1 '^$' | grep -q '^inbox' || { echo '  inbox not first'; screen; return 1; }
-	has backend infra || return 1
+	has backend '  infra' || return 1        # infra nests under backend, which links it
 	keys / ; keys i n f; keys Enter
-	lacks backend && has infra || return 1
-	keys Enter
+	has backend '  infra' || return 1        # filter keeps matches plus their ancestors
+	keys j; keys Enter
 	has redis postgres
 }
 
