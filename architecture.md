@@ -49,7 +49,7 @@ main
 ```
 
 ## Layout port rules
-- Ported function by function from the PHP v1 (`git show f859da2:ref/hmx.php`: calculate_x_and_lh 748, calculate_aligned_x 826, calculate_h 863, calculate_y 912, calculate_children_y 922, calculate_height_shift 960, calculate_xo 1221, build_map 1298). Same names, same order, same arithmetic. Do not redesign the algorithm.
+- Ported function by function from the PHP v1 (`git show php-ref:ref/hmx.php`: calculate_x_and_lh 748, calculate_aligned_x 826, calculate_h 863, calculate_y 912, calculate_children_y 922, calculate_height_shift 960, calculate_xo 1221, build_map 1298). Same names, same order, same arithmetic. Do not redesign the algorithm.
 - Width = runewidth.StringWidth. Wrap = same word-wrap semantics as PHP `wordwrap` at max_leaf_node_width / max_parent_node_width.
 - Golden tests: the PHP binary's plain-text screen (tmux capture, no colours) for each fixture is the expected grid. Go must match byte for byte inside the tree area.
 

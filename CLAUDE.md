@@ -13,7 +13,7 @@ Go + tcell port of h-m-m: one `package main`, flat files, one `App` struct, `act
 - `listToMap` turns tabs into two spaces before computing depth. Never detect anything by space count; body lines use the `> ` sigil.
 - Node ids from `listToMap` are sequential from 2 in file order, so tests address nodes by id. Node 0 is the hidden super-root; a file with several top-level lines gets a synthetic `root` node 1.
 - `Serialize` ends with exactly one newline (the PHP v1 wrote a trailing blank line; files saved by v1 lose it once).
-- Layout goldens in `test/golden/` are frozen 120x40 captures of the PHP v1 (`test/golden/gen.sh`, private tmux socket with the status bar off because `tmux -y N` gives an N-1 row pane). The PHP reference lives in git history: `git show f859da2:ref/hmx.php`. Never regenerate goldens from Go.
+- Layout goldens in `test/golden/` are frozen 120x40 captures of the PHP v1 (`test/golden/gen.sh`, private tmux socket with the status bar off because `tmux -y N` gives an N-1 row pane). The PHP reference lives in git history: `git show php-ref:ref/hmx.php`. Never regenerate goldens from Go.
 - `readline` (inline editor), the list screen, prompts, and `$EDITOR` round-trips are unit-tested through `tcell.NewSimulationScreen` + `InjectKey`; `Suspend`/`Resume` are no-ops there.
 - Anything interactive (`$EDITOR`, `task … info | $PAGER`) runs between `screen.Suspend()` and `Resume()` with os.Stdin/Stdout.
 - Clipboard: yank/cut pipe to `pbcopy`, paste reads `pbpaste`; internal string when `pbcopy` is not on PATH. Tests put fake scripts on PATH and must use absolute `/bin/cat` inside them.

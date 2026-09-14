@@ -5,7 +5,7 @@ Three levels. Cheap first. Every change must pass level 1; UI changes also level
 ## 1. Unit (`go test ./...`)
 TDD: write the failing test first, then the code, one slice at a time. Fixtures are real `.hmm` files in `test/fixtures/` with real tabs. Never build fixtures from strings with spaces.
 
-**Golden layout tests.** For each fixture, `test/golden/<name>.txt` (expanded) and `<name>.collapsed.txt` are the plain-text 120x40 screens of the PHP v1 (`test/golden/gen.sh`, which needs `git show f859da2:ref/hmx.php > ref/hmx.php`). `layout_test.go` renders the same fixture and diffs byte for byte. Goldens are frozen; never regenerate them from Go.
+**Golden layout tests.** For each fixture, `test/golden/<name>.txt` (expanded) and `<name>.collapsed.txt` are the plain-text 120x40 screens of the PHP v1 (`test/golden/gen.sh`, which needs `git show php-ref:ref/hmx.php > ref/hmx.php`). `layout_test.go` renders the same fixture and diffs byte for byte. Goldens are frozen; never regenerate them from Go.
 
 | area | check |
 |---|---|

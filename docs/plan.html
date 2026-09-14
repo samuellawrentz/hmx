@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>hmx — multi-map TUI plan</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--ink:#c9d1d9;--dim:#8b949e;--acc:#f0b35b;--link:#58a6ff;--ok:#3fb950;--bad:#f85149;--line:#30363d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;max-width:1080px;padding:32px 24px 80px;margin-inline:auto}
+h1{font-size:26px;margin:0 0 4px;color:#fff}
+h1 span{color:var(--acc)}
+h2{font-size:17px;margin:44px 0 12px;color:var(--acc);border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:15px;margin:22px 0 6px;color:#fff}
+p,li{color:var(--ink)}
+.kicker{color:var(--dim);margin:0 0 24px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.35;margin:8px 0 14px}
+pre.tui{color:#d0d7de;white-space:pre}
+pre.tui b{color:var(--acc);font-weight:600}
+pre.tui i{color:var(--link);font-style:normal}
+pre.tui u{color:var(--dim);text-decoration:none}
+pre.tui em{background:var(--acc);color:#000;font-style:normal}
+table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:14px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:500}
+code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:13px}
+.tag{display:inline-block;padding:0 7px;border-radius:10px;font-size:12px;border:1px solid var(--line);color:var(--dim)}
+.tag.ok{color:var(--ok);border-color:var(--ok)}
+.tag.no{color:var(--bad);border-color:var(--bad)}
+.tag.yes{color:var(--acc);border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.card h3{margin-top:0}
+ul{padding-left:20px;margin:6px 0}
+.mermaid{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+a{color:var(--link)}
+.dec{border-left:3px solid var(--acc);padding:2px 12px;margin:10px 0;color:var(--ink)}
+.dec b{color:var(--acc)}
+</style></head><body>
+
+<h1>hmm <span>/</span> multi-map TUI</h1>
+<p class="kicker">Base: h-m-m (PHP, 3854 lines, one file). Add: map list, cross-map links, extract-to-map, large nodes. Sync stays git.</p>
+
+<details><summary style="color:var(--dim);cursor:pointer">Review round 1 (codex gpt-5.6 + cursor grok-4.5 + me), 2026-09-13: what changed</summary>
+<ul>
+<li>Body lines get a <code>&gt;</code> sigil. Both flagged the 2-space encoding; verified in upstream parser (tabs → 2 spaces before depth).</li>
+<li>Enter: acts on the link if present, else new sibling. Cursor wanted Enter = sibling only, codex wanted Enter = follow. Merged, no muscle-memory break.</li>
+<li>Missing link target: confirm before create (both).</li>
+<li>Map rename rewrites inbound links across maps (codex). Node-title links: exact → substring → root + message.</li>
+<li>List <code>/</code> falls back to content grep (codex). Cursor said grep is enough; ~5 lines, taken.</li>
+<li>Dropped <code>v</code> (pane auto-shows) and <code>x</code> export (cursor). Restored <code>P</code> paste-as-siblings (codex). 24 → 23 keys.</li>
+<li>Extract: one key for filename, link, root title; never overwrite (codex).</li>
+<li>Taskwarrior split into read-only stage A, mutations stage B (codex wanted a full cut, cursor a defer).</li>
+<li>Rejected: sidecar body files (both), merge-back (all three), recent screen (all three), ids (FINAL).</li>
+</ul></details>
+<h2>0. Prior art (GitHub, checked 2026-09-13)</h2>
+<table>
+<tr><th>repo</th><th>stars</th><th>lang</th><th>model</th><th>multi-map / links</th><th>verdict</th></tr>
+<tr><td><a href="https://github.com/nadrad/h-m-m">nadrad/h-m-m</a></td><td>2290</td><td>PHP</td><td>tree, tab-indented text</td><td><span class="tag no">no</span> (xdg-open on a path)</td><td>our base</td></tr>
+<tr><td><a href="https://github.com/tanciaku/tmmpr">tanciaku/tmmpr</a></td><td>349</td><td>Rust / ratatui</td><td>free canvas, notes + edges, JSON</td><td><span class="tag no">no</span> recent-files only</td><td>whiteboard, not a tree. Different tool. Steal: its edit-mode UX for long notes</td></tr>
+<tr><td><a href="https://github.com/webboty/tui-mindmap">webboty/tui-mindmap</a></td><td>0</td><td>Python</td><td>render-only ASCII tree</td><td><span class="tag no">no</span></td><td>not interactive</td></tr>
+<tr><td>lucasepe/crumbs</td><td>107</td><td>Go</td><td>text → PNG</td><td><span class="tag no">no</span></td><td>not a TUI</td></tr>
+</table>
+<p>Nothing does list + link + extract in the terminal. The gap is real and small.</p>
+
+<h2>1. Large nodes</h2>
+<p>Today: title is wordwrapped at <code>max_leaf_node_width</code> (55) into a multi-line box. Works to ~4 lines, then the layout gets tall and the tree becomes unreadable.</p>
+<div class="dec"><b>Decision:</b> a node is <b>title + optional body</b>. Tree renders title only (1–2 wrapped lines, <code>…</code> when body exists). Body shows in a bottom pane <b>automatically when the active node has one</b>, edited in <code>$EDITOR</code>. Never draw the body in the tree. No toggle key.</div>
+<pre class="tui">                ┌─ Auth ────────────────────────────────┐
+  ┌ hmm ┐       │                                        │
+  │     ├───────┤ JWT rotation <b>…</b>  ◄── body exists      │
+  │     │       │                                        │
+  │     ├───────┤ Session store                          │
+  └─────┘       │  ├── Redis                             │
+                │  └── <i>[[infra#redis]]</i>  ◄── link, blue   │
+                └────────────────────────────────────────┘
+ <u>──────────────────────────────── detail (auto, node has body) ─</u>
+ <b>JWT rotation</b>
+ Rotate every 24h. Old key stays valid 1h for in-flight
+ requests. See RFC in [[security]]. Owner: platform.
+ <u>~/maps/backend.hmm  ·  12 nodes  ·  E edit body  ·  Enter follow</u></pre>
+<table>
+<tr><th>key</th><th>action</th></tr>
+<tr><td><code>e</code> / <code>a</code></td><td>edit title inline (existing)</td></tr>
+<tr><td><code>E</code></td><td>open title+body in <code>$EDITOR</code>, first line = title</td></tr>
+<tr><td><code>ctrl+e</code></td><td>extract subtree to its own map when a node outgrows "note" size</td></tr>
+</table>
+<p>Body lines carry a <code>&gt;</code> sigil in the file (see §5). Verified: upstream <code>list_to_map</code> rewrites every tab to two spaces before computing depth, so "indent + 2 spaces" would parse as a child. A sigil makes it unambiguous for both parsers.</p>
+<p>Ladder check: body-in-editor beats writing an in-TUI text editor. tmmpr wrote one (modal vim clone). Skip it, <code>$EDITOR</code> already exists.</p>
+
+<h2>2. Screens</h2>
+<div class="grid">
+<div class="card"><h3>A. List (no file arg)</h3>
+<pre class="tui"> hmm  ~/maps                <u>23 maps</u>
+ <u>/</u> <em>back</em>_
+ ─────────────────────────────────
+ <b>▸ backend</b>        41n  2h ago
+   backend-auth    12n  2h ago
+   backlog          8n  3d ago
+ ─────────────────────────────────
+ <u>Enter open · n new · d del · r rename</u>
+ <u>q quit · / filter · ↑↓ jk</u></pre>
+<ul><li>rows = <code>ls map_dir/*.hmm</code>, <code>inbox</code> pinned first, then mtime</li><li>node count = lines not starting with the body sigil</li><li><code>/</code> filters names live. <code>Enter</code> on the filter line with no name hit → <code>grep -il</code> contents, open the map with the in-map search pre-filled so <code>n</code> jumps to the hit</li></ul></div>
+
+<div class="card"><h3>B. Map (existing, + link colouring)</h3>
+<pre class="tui"> <u>backend › auth</u>          <u>[2 back]</u>
+ ┌ auth ┐
+ │      ├── Tokens
+ │      │    ├── JWT <b>…</b>
+ │      │    └── refresh
+ │      ├── Sessions
+ │      └── <i>[[infra#redis]]</i>
+ └──────┘
+ <u>Enter follow · Backspace back · ctrl+e extract</u></pre>
+<ul><li>breadcrumb = nav stack depth</li><li><code>[[..]]</code> titles blue, <code>…</code> amber</li><li><code>r</code> rename in the list screen rewrites <code>[[old</code> → <code>[[new</code> across all maps and reports the files touched</li><li>everything else untouched</li></ul></div>
+
+<div class="card"><h3>C. Follow / back</h3>
+<pre class="tui"> Enter on <i>[[infra#redis]]</i>
+
+ push {backend.hmm, node 17, viewport}
+ load infra.hmm → jump to "redis"
+   exact title, else substring,
+   else land at root + message
+
+ Backspace
+ pop → backend.hmm, node 17 restored
+
+ <i>[[new-thing]]</i> + Enter, file missing
+ → <b>create new-thing.hmm? [y/N]</b>
+
+ Enter on a node with no link
+ → new sibling (upstream behaviour)</pre>
+<p>One rule: <b>Enter acts on the link if the node has one, else creates a sibling.</b> Link is looked up in the title first, then the body (first match). Task links (§8) follow the same rule.</p></div>
+
+<div class="card"><h3>D. Extract (ctrl+e)</h3>
+<pre class="tui"> before              after
+ ─────               ─────
+ Sessions            <i>[[backend-sessions]]</i>
+  ├── Redis
+  ├── TTL            + backend-sessions.hmm:
+  └── Eviction         Sessions
+                        ├── Redis
+                        ├── TTL
+                        └── Eviction
+
+ prompt: name [backend-sessions]_
+ key = parent-map + "-" + slug(title)
+ same key for filename, [[link]], root title
+ existing file → refuse, ask another name</pre></div>
+</div>
+
+<h2>3. States</h2>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> List : no file arg
+  [*] --> Map : hmm file.hmm
+  List --> Map : Enter / n
+  Map --> List : q (saves if modified)
+  Map --> Map : Enter on [[link]] (push)
+  Map --> Map : Backspace (pop)
+  Map --> Editor : E ($EDITOR, blocking)
+  Editor --> Map : exit editor, reparse
+  Map --> [*] : q when stack empty and list not wanted
+</pre>
+<pre>mode   : 'list' | 'map'
+stack  : [{file, active_node, viewport_top, viewport_left}]   # nav history, in-memory only
+list   : {items, filter, cursor}
+nodes  : id → {title, body, parent, children, ...}            # body is the only new field
+                                                              # everything else already exists in $mm</pre>
+<p>One map in memory at a time. Switching = save-if-modified, reset, <code>load_file</code>. No tabs, no multi-buffer.</p>
+
+<h2>4. Components (functions, h-m-m style)</h2>
+<table>
+<tr><th>fn</th><th>does</th><th>size</th></tr>
+<tr><td><code>list_screen()</code></td><td>scan dir, filter, draw rows, own key loop (like <code>help()</code>), returns filename or null</td><td>~90</td></tr>
+<tr><td><code>open_map(file, node?)</code></td><td>push stack, save if modified, load, jump to node by title</td><td>~30</td></tr>
+<tr><td><code>follow_link()</code></td><td>parse <code>[[map#node]]</code> from active title; missing file → create</td><td>~25</td></tr>
+<tr><td><code>go_back()</code></td><td>pop stack, reload, restore position</td><td>~15</td></tr>
+<tr><td><code>extract_to_map()</code></td><td>subtree → file via existing serializer, node title → <code>[[slug]]</code>, drop children</td><td>~40</td></tr>
+<tr><td><code>edit_body()</code></td><td>write title+body to tmp, run <code>$EDITOR</code>, reparse, mark modified</td><td>~30</td></tr>
+<tr><td><code>detail_pane()</code></td><td>draw body of active node in bottom N rows when it has one, called from <code>display()</code></td><td>~30</td></tr>
+<tr><td><code>rename_map()</code></td><td>list-screen <code>r</code>: mv file, <code>sed -i</code> inbound <code>[[old</code> → <code>[[new</code> across map_dir, report</td><td>~15</td></tr>
+<tr><td><code>display()</code> Δ</td><td>colour <code>[[..]]</code>, append <code>…</code> when body, reserve rows for pane</td><td>~15</td></tr>
+<tr><td><code>load_file()</code> / <code>save()</code> Δ</td><td>parse/emit body continuation lines</td><td>~25</td></tr>
+</table>
+<p>Total ≈ 320 lines, 4 new keybindings (<code>Enter</code>, <code>Backspace</code>, <code>ctrl+e</code>, <code>E</code>), 1 config key (<code>map_dir</code>).</p>
+
+<h2>5. File format</h2>
+<pre>auth
+	Tokens
+		JWT rotation
+		> Rotate every 24h. Old key stays valid 1h.     ← body: same indent as node, "> " sigil
+		> See [[security]].                              ← multiple body lines allowed
+		refresh
+	[[infra#redis]]</pre>
+<ul>
+<li>Node line = tabs then title. Body line = same tabs then <code>&gt; </code>. Tabs are the only structural indent; normalised on save. Upstream h-m-m shows body lines as children titled <code>&gt; …</code>, harmless and reversible.</li>
+<li>Link = <code>[[name]]</code> or <code>[[name#node title]]</code>. Plain text, git-diffable, greppable.</li>
+<li>No index, no ids, no frontmatter. Backlinks = <code>grep -l '\[\[name' *.hmm</code> on demand.</li>
+</ul>
+
+<h2>6. Stack</h2>
+<table>
+<tr><th>option</th><th>fit for absolute-positioned tree + connectors</th><th>runtime dep</th><th>call</th></tr>
+<tr><td><b>PHP fork (now)</b></td><td>already does it</td><td>php</td><td><span class="tag yes">v1 here</span> ~300 lines, validates the design before any rewrite</td></tr>
+<tr><td>Go + tcell</td><td>raw cell grid, you own layout (same as PHP today). 1 dep</td><td>none, static binary</td><td><span class="tag ok">rewrite target</span> if PHP dep hurts</td></tr>
+<tr><td>Rust + ratatui</td><td>fine, tmmpr proves it. Tree w/ parent ids = arena + indices, more ceremony</td><td>none</td><td><span class="tag">only if you want Rust</span></td></tr>
+<tr><td>OpenTUI (13k★, TS on Zig)</td><td>flexbox layout model. A mind map is absolute x/y + box-drawing connectors, you'd bypass flexbox and paint the framebuffer directly</td><td>bun</td><td><span class="tag no">skip</span> swaps php-dep for bun-dep, layout model fights the problem</td></tr>
+</table>
+<p>"Canvas in Go" = tcell's <code>SetContent(x, y, rune, style)</code>. That is the whole canvas API. No lib needed above it.</p>
+
+<h2>7. Shortcuts: 86 → 23 (+2 taskwarrior, later)</h2>
+<p>h-m-m binds 86 keys. Rule: one key per action, vim letters where they exist, nothing you can't recall after a week away. Everything cut is either a duplicate, a layout knob (belongs in config), or decoration (stars, ranks, symbols).</p>
+<div class="grid">
+<div class="card"><h3>Map screen</h3>
+<table>
+<tr><th>key</th><th>action</th><th></th></tr>
+<tr><td><code>h j k l</code> / arrows</td><td>move</td><td></td></tr>
+<tr><td><code>Space</code></td><td>collapse / expand node</td><td></td></tr>
+<tr><td><code>f</code></td><td>focus: collapse other branches, center</td><td></td></tr>
+<tr><td><code>0</code></td><td>expand all</td><td></td></tr>
+<tr><td><code>o</code></td><td>new sibling</td><td></td></tr>
+<tr><td><code>Tab</code></td><td>new child</td><td></td></tr>
+<tr><td><code>e</code></td><td>edit title</td><td></td></tr>
+<tr><td><code>E</code></td><td>edit title + body in <code>$EDITOR</code></td><td><span class="tag yes">new</span></td></tr>
+<tr><td><code>d</code></td><td>delete subtree (goes to clipboard)</td><td></td></tr>
+<tr><td><code>y</code></td><td>yank subtree</td><td></td></tr>
+<tr><td><code>p</code> / <code>P</code></td><td>paste as children / as siblings</td><td></td></tr>
+<tr><td><code>J</code> / <code>K</code></td><td>move node down / up</td><td></td></tr>
+<tr><td><code>u</code></td><td>undo</td><td></td></tr>
+<tr><td><code>/</code> <code>n</code> <code>N</code></td><td>search, next, prev</td><td></td></tr>
+<tr><td><code>Enter</code></td><td>follow <code>[[link]]</code> if the node has one (confirm if target missing), else new sibling</td><td><span class="tag yes">new</span></td></tr>
+<tr><td><code>Backspace</code></td><td>back to previous map</td><td><span class="tag yes">new</span></td></tr>
+<tr><td><code>ctrl+e</code></td><td>extract subtree to new map</td><td><span class="tag yes">new</span></td></tr>
+<tr><td><code>s</code></td><td>save</td><td></td></tr>
+<tr><td><code>q</code></td><td>back to list (saves if modified)</td><td></td></tr>
+<tr><td><code>?</code></td><td>help</td><td></td></tr>
+<tr><td><code>t</code> / <code>T</code></td><td>link or create task / mark done</td><td><span class="tag">later</span></td></tr>
+</table></div>
+
+<div class="card"><h3>List screen</h3>
+<table>
+<tr><th>key</th><th>action</th></tr>
+<tr><td><code>j k</code> / arrows</td><td>move</td></tr>
+<tr><td><code>Enter</code></td><td>open</td></tr>
+<tr><td><code>n</code></td><td>new map</td></tr>
+<tr><td><code>r</code></td><td>rename</td></tr>
+<tr><td><code>d</code></td><td>delete (confirm)</td></tr>
+<tr><td><code>/</code></td><td>filter</td></tr>
+<tr><td><code>q</code></td><td>quit</td></tr>
+</table>
+<h3>Cut (63)</h3>
+<ul>
+<li><b>duplicates</b>: <code>a i A I</code> (= e), <code>O</code> (= Tab), <code>m ~</code>, <code>ctrl+c ctrl+q Q</code>, <code>ctrl+o</code> xdg-open (Enter follow replaces it), <code>del D Y</code></li>
+<li><b>layout knobs → config</b>: <code>w W z Z | c C F</code>, ctrl+arrows viewport</li>
+<li><b>decoration</b>: stars <code>alt+↑↓</code>, ranks <code>+ - = _</code>, <code>t #</code></li>
+<li><b>rarely needed</b>: <code>1-9</code> collapse levels, <code>b v V R r</code> (Space + f + 0 cover it), <code>H ctrl+h</code> hide, <code>T</code> sort, <code>g G</code>, <code>S</code> save-as (rename lives in list), <code>x X</code> exports (config binding if ever needed)</li>
+</ul>
+<p>Anything cut that you miss comes back as a config binding, not a default.</p>
+</div>
+</div>
+
+<h2>8. Taskwarrior link (later, two stages)</h2>
+<div class="dec"><b>Decision:</b> same <code>[[..]]</code> mechanism, no new data model. A node links to a task by uuid prefix; the task links back with one annotation. hmm never owns task state, it reads it at map open.<br><b>Stage A</b> (read-only): render ☐/☑ for <code>[[task:uuid8]]</code> + Enter → <code>task info</code>. Zero writes, zero keys.<br><b>Stage B</b> (only if A is used daily): <code>t</code> picker/create, <code>T</code> done.</div>
+<pre class="tui"> ┌ backend ┐
+ │         ├── Sessions
+ │         │    ├── <b>☐</b> Redis eviction policy <u>[[task:4e09cee2]]</u>  <u>due fri</u>
+ │         │    └── <b>☑</b> TTL config <u>[[task:9b1f00aa]]</u>
+ │         └── <i>[[infra#redis]]</i>
+ └─────────┘
+ <u>t link/create task · T done · Enter on [[task:..]] → task info</u></pre>
+<table>
+<tr><th>piece</th><th>how</th></tr>
+<tr><td>file</td><td>title line carries <code>[[task:&lt;uuid8&gt;]]</code>. Plain text, greppable: <code>grep -l 'task:4e09' *.hmm</code></td></tr>
+<tr><td>read</td><td>on map open, collect uuids from titles, one call: <code>task rc.context=none &lt;uuid&gt; &lt;uuid&gt; … export</code> → <code>{uuid: {status, due, owner}}</code>. 35 tasks, ~50 ms. No polling, no cache file.</td></tr>
+<tr><td>render</td><td>prefix <code>☐</code> pending / <code>☑</code> completed / <code>☐</code> red when <code>due &lt; now</code>. Status only, never the description, the node title already is one.</td></tr>
+<tr><td><code>t</code></td><td>node has no link → <b>picker</b> (the list screen reused) over <code>task rc.context=none status:pending export</code>, sorted by urgency, rows <code>project · due · description</code>, <code>/</code> filters.<br><code>Enter</code> on a row → link: node title <b>becomes the task description</b>, <code>[[task:uuid8]]</code> appended, task gets <code>annotate -- "map: backend#Sessions"</code>.<br><code>n</code> in the picker → new task from the node title: <code>task add "&lt;title&gt;" project:&lt;map name if pod&gt; owner:me</code>, then the same link step. Exact command shown before running.<br><code>Esc</code> cancels.<br>node has link → <code>task &lt;uuid&gt; info</code> in a pager</td></tr>
+<tr><td><code>T</code></td><td><code>task &lt;uuid&gt; done</code>, re-read. Undo = <code>task undo</code>, not hmm's undo stack</td></tr>
+<tr><td><code>Enter</code></td><td>on <code>[[task:..]]</code> → <code>task info</code>. Same rule as map links: Enter acts on the link</td></tr>
+<tr><td>back-link</td><td>annotation <code>map: &lt;map&gt;#&lt;node&gt;</code> on the task. Visible in <code>twt</code> <code>I</code> / <code>A</code>. If the node is renamed, the annotation goes stale. Accept it, the uuid in the map is the source of truth</td></tr>
+<tr><td>writes</td><td>always <code>rc.confirmation=off rc.bulk=0 rc.verbose=nothing</code>, uuid never id. The on-exit hook syncs, hmm does nothing extra</td></tr>
+</table>
+<p>Title rule: the task description wins on link. Task is the source of truth; a node and its task disagreeing is worse than losing a draft title.</p>
+<p>Adds 2 keys (<code>t</code>, <code>T</code>) → 26. Skipped: fzf (list screen already exists), pre-filling the picker filter with the node title, linking completed tasks, project/owner/due pickers (use <code>twt</code>), timew start from a node, showing worked time in the tree, a task → map jump from <code>twt</code> (the annotation is the jump, open the map by hand). Add any of these once linking is in daily use.</p>
+
+<h2>9. Not building</h2>
+<ul>
+<li>Graph model / node ids across maps. <code>#title</code> suffix covers node-to-node. Add ids when a title collision actually bites.</li>
+<li>Backlink panel, tabs, splits, search across maps (<code>grep</code> + list filter cover it).</li>
+<li>In-TUI multiline editor. <code>$EDITOR</code>.</li>
+<li>Sync. git.</li>
+<li>Merge-back after extract. Manual path is free: open child, <code>y</code> root, Backspace, <code>p</code>, delete the link node.</li>
+<li>Recent / jump screen. mtime sort is recency.</li>
+<li>Inbox as a feature. <code>inbox.hmm</code> is a convention, pinned first in the list.</li>
+<li>Any-node-to-any-node arrows drawn in the tree. That is tmmpr's problem space, and it breaks the tree layout. Links stay textual.</li>
+</ul>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11'
+mermaid.initialize({startOnLoad:true,theme:'base',themeVariables:{primaryColor:'#161b22',primaryTextColor:'#c9d1d9',primaryBorderColor:'#f0b35b',lineColor:'#8b949e',fontFamily:'ui-monospace,Menlo,monospace',fontSize:'13px'}})
+</script>
+</body></html>
