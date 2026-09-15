@@ -38,6 +38,8 @@ var actions = map[string]func(*App){
 	"edit_node":              editNode,
 	"delete_node":            deleteNode,
 	"yank_node":              yankNode,
+	"yank_children":          yankChildren,
+	"cut_children":           deleteChildren,
 	"paste_as_children":      pasteAsChildren,
 	"paste_as_siblings":      pasteAsSiblings,
 	"move_node_down":         moveNodeDown,
@@ -50,6 +52,7 @@ var actions = map[string]func(*App){
 	"go_back":                (*App).goBack,
 	"edit_body":              (*App).editBody,
 	"extract_to_map":         extractToMap,
+	"center_active_node":     centerActiveNode,
 	"task_picker":            taskPicker,
 }
 
@@ -64,6 +67,7 @@ var mapKeys = map[string]string{
 	"Right":      "go_right",
 	"Space":      "toggle_node",
 	"f":          "focus",
+	"c":          "center_active_node",
 	"0":          "expand_all",
 	"1":          "collapse_all",
 	"s":          "save",
@@ -77,6 +81,8 @@ var mapKeys = map[string]string{
 	"Ctrl-E":     "extract_to_map",
 	"d":          "delete_node",
 	"y":          "yank_node",
+	"Y":          "yank_children",
+	"D":          "cut_children",
 	"p":          "paste_as_children",
 	"P":          "paste_as_siblings",
 	"J":          "move_node_down",
@@ -178,6 +184,9 @@ func toggleNode(a *App) {
 	n.Collapsed = !n.Collapsed
 	a.build()
 }
+
+// centerActiveNode ports center_active_node, ref/hmx.php 2042.
+func centerActiveNode(a *App) { a.m.Center(a.s.Size()) }
 
 // focus ports focus/focus_vh, ref/hmx.php 3223.
 func focus(a *App) {
@@ -354,6 +363,24 @@ func deleteNode(a *App) {
 func yankNode(a *App) {
 	a.copyToClipboard(a.m.Yank())
 	a.msg = "Item(s) are copied to the clipboard."
+}
+
+// yankChildren/deleteChildren port yank_children/delete_children, ref/hmx.php 3082/3099.
+func yankChildren(a *App) {
+	if isLeaf(a.m.Nodes[a.m.Active]) {
+		return
+	}
+	a.copyToClipboard(a.m.YankChildren())
+	a.msg = "Item(s) are copied to the clipboard."
+}
+
+func deleteChildren(a *App) {
+	if isLeaf(a.m.Nodes[a.m.Active]) {
+		return
+	}
+	a.copyToClipboard(a.m.DeleteChildren())
+	a.build()
+	a.msg = "Item(s) are cut and placed into the clipboard."
 }
 
 // pasteAsChildren/pasteAsSiblings port paste_sub_tree, ref/hmx.php 2897.

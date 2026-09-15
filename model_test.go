@@ -211,6 +211,45 @@ func TestYankPaste(t *testing.T) {
 	}
 }
 
+// TestChildren covers YankChildren/DeleteChildren (yank_children/delete_children, ref/hmx.php 3082/3099).
+// Fixture ids are sequential from 2 in file order: root=2, a=3, b=4, c=5, d=6, e=7.
+func TestChildren(t *testing.T) {
+	orig := "root\n\ta\n\t\tb\n\t\t\tc\n\t\td\n\te\n"
+	m := Parse(orig)
+
+	m.Active = 3
+	if text := m.YankChildren(); text != "b\n\tc\nd\n" || m.Serialize() != orig || m.Modified {
+		t.Errorf("yank children: %q modified=%v", text, m.Modified)
+	}
+
+	if text := m.DeleteChildren(); text != "b\n\tc\nd\n" {
+		t.Errorf("delete children: %q", text)
+	}
+	if len(m.Nodes[3].Children) != 0 || m.Nodes[4] != nil || m.Nodes[5] != nil || m.Nodes[6] != nil || m.Active != 3 || !m.Modified {
+		t.Errorf("after delete children: active=%d nodes 4,5,6=%v,%v,%v", m.Active, m.Nodes[4], m.Nodes[5], m.Nodes[6])
+	}
+	m.Undo()
+	if m.Serialize() != orig {
+		t.Errorf("undo delete children: %q", m.Serialize())
+	}
+
+	m.Active = 7
+	m.Paste("b\n\tc\nd\n", false)
+	want := "root\n\ta\n\t\tb\n\t\t\tc\n\t\td\n\te\n\t\tb\n\t\t\tc\n\t\td\n"
+	if got := m.Serialize(); got != want {
+		t.Errorf("paste children: %q", got)
+	}
+
+	leaf := Parse(orig)
+	leaf.Active = 5 // c is a leaf
+	if text := leaf.YankChildren(); text != "" {
+		t.Errorf("yank leaf: %q", text)
+	}
+	if text := leaf.DeleteChildren(); text != "" || leaf.Modified {
+		t.Errorf("delete leaf: %q modified=%v", text, leaf.Modified)
+	}
+}
+
 func TestUndo(t *testing.T) {
 	m := backend(t)
 	m.Undo() // empty stack

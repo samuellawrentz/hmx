@@ -3,7 +3,7 @@
 Go + tcell port of h-m-m: one `package main`, flat files, one `App` struct, `actions` (name → func) and `mapKeys`/`listKeys` (key → name) tables. Read `foundations.md`, `spec.md`, `architecture.md`, `testing.md` before changing anything. Files per architecture.md; ported functions keep the upstream PHP names in camelCase.
 
 ## Build and gates
-`go build -o hmx .` · `go vet ./...` · `go test ./...` (unit + golden layout) · `bash test/tui.sh` (tmux smoke, 9 scenarios, `HMX_BIN` defaults to `./hmx`). Fixtures in `test/fixtures/` use real tabs. Deps: tcell/v2 and go-runewidth only; ask before adding one.
+`go build -o hmx .` · `go vet ./...` · `go test ./...` (unit + golden layout) · `bash test/tui.sh` (tmux smoke, 10 scenarios, `HMX_BIN` defaults to `./hmx`). Fixtures in `test/fixtures/` use real tabs. Deps: tcell/v2 and go-runewidth only; ask before adding one.
 
 ## Config
 `~/.config/hmx/config` (or `$XDG_CONFIG_HOME/hmx/config`), `key = value` lines, `bind<key> = action` rebinds (key names are tcell's: `Ctrl-E`, `Space`, `Backspace2`). Env `hmx_<key>`, flag `--key=value`; flag > env > file > default. `map_dir` defaults to `~/maps`. Map files keep the `.hmm` extension.

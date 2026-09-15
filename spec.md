@@ -37,6 +37,7 @@ bottom pane shows the body when the active node has one.
 | `h j k l` ↑↓←→ | move |
 | `Space` | collapse / expand |
 | `f` | focus: collapse others, center |
+| `c` | center the active node |
 | `0` / `1` | expand all / collapse all |
 | `o` | new sibling |
 | `Tab` | new child |
@@ -44,6 +45,8 @@ bottom pane shows the body when the active node has one.
 | `E` | edit title + body in `$EDITOR`, first line = title |
 | `d` | delete subtree to clipboard |
 | `y` | yank subtree |
+| `D` | cut the children of the node to the clipboard |
+| `Y` | yank the children of the node |
 | `p` / `P` | paste as children / as siblings |
 | `J` / `K` | move node down / up |
 | `u` | undo |

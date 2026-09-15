@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// spec.md: the 25 map bindings (arrows, Ctrl-C, Backspace2 are aliases), 29 distinct actions
+// spec.md: the 28 map bindings (arrows, Ctrl-C, Backspace2 are aliases), 32 distinct actions
 func TestKeymap(t *testing.T) {
-	want := strings.Fields("h j k l Up Down Left Right Space f 0 1 o Tab e E d y p P J K u / n N Enter Backspace Backspace2 Ctrl-E s q Ctrl-C ? t")
-	check(t, mapKeys, want, 29)
+	want := strings.Fields("h j k l Up Down Left Right Space f c 0 1 o Tab e E d y Y D p P J K u / n N Enter Backspace Backspace2 Ctrl-E s q Ctrl-C ? t")
+	check(t, mapKeys, want, 32)
 	for k, name := range mapKeys {
 		if actions[name] == nil {
 			t.Errorf("%q bound to unknown action %q", k, name)

@@ -345,16 +345,28 @@ func (m *Map) deleteInternal(active int, excludeParent bool) {
 	}
 }
 
-func (m *Map) Delete() string {
-	isRoot := m.Active == m.Root
-	clip := mapToList(m.Nodes, m.Active, isRoot, 0)
+func (m *Map) cut(excludeParent bool) string {
+	clip := mapToList(m.Nodes, m.Active, excludeParent, 0)
 	m.PushChange()
-	m.deleteInternal(m.Active, isRoot)
+	m.deleteInternal(m.Active, excludeParent)
 	return clip
 }
 
+func (m *Map) Delete() string { return m.cut(m.Active == m.Root) }
+
 func (m *Map) Yank() string {
 	return mapToList(m.Nodes, m.Active, false, 0)
+}
+
+// YankChildren ports yank_children, ref/hmx.php 3082: the children subtree as top-level lines, node untouched.
+func (m *Map) YankChildren() string { return mapToList(m.Nodes, m.Active, true, 0) }
+
+// DeleteChildren ports delete_children, ref/hmx.php 3099: same text, then the children are removed; active stays.
+func (m *Map) DeleteChildren() string {
+	if len(m.Nodes[m.Active].Children) == 0 {
+		return ""
+	}
+	return m.cut(true)
 }
 
 func (m *Map) Paste(text string, asSibling bool) {

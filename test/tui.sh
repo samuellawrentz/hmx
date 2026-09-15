@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2), 9 scenarios
+# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2), 10 scenarios
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 bin="${HMX_BIN:-./hmx}"
@@ -83,6 +83,23 @@ expand_collapse()
 	has '[+]'
 }
 
+# D cuts the children of a node to the clipboard, p pastes them under a sibling
+move_children()
+{
+	keys 0                # expand all so titles are visible
+	keys /
+	keys "API contract"
+	keys Enter
+	has 'API contract review' 'Schema migration' || return 1   # title truncated at this width
+	keys D
+	lacks 'Schema migration checklist' || return 1
+	keys j                # sibling "Service ownership matrix update"
+	keys p
+	has 'Schema migration checklist' 'Rate limit tuning notes' || return 1
+	screen | grep -F 'API contract review' | grep -vq 'Schema' || return 1
+	screen | awk '/Service ownership matrix update/{f=1} f && /Schema migration checklist/{found=1} END{exit !found}'
+}
+
 # t opens the task picker on the active node; Enter links the top (most urgent) task
 task_picker()
 {
@@ -103,6 +120,7 @@ run extract         backend.hmm extract
 EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hmm body_edit
 run no_map_dir      ''          no_map_dir /new
 run expand_collapse backend.hmm expand_collapse
+run move_children   deep.hmm    move_children
 
 FAKE_TASK=$(mktemp -d)
 printf '[{"uuid":"aaaaaaaa-0000-0000-0000-000000000000","description":"write spec","project":"hmx","urgency":3.1},
