@@ -9,7 +9,7 @@ Go + tcell port of h-m-m: one `package main`, flat files, one `App` struct, `act
 `~/.config/hmx/config` (or `$XDG_CONFIG_HOME/hmx/config`), `key = value` lines, `bind<key> = action` rebinds (key names are tcell's: `Ctrl-E`, `Space`, `Backspace2`). Env `hmx_<key>`, flag `--key=value`; flag > env > file > default. `map_dir` defaults to `~/maps`. Map files keep the `.hmm` extension.
 
 ## Gotchas
-- Layout is horizontal: `l` descends into the nearest child, `j`/`k` move between siblings. `j` on a single child does nothing (same y as parent).
+- Layout is horizontal: `l` descends into the VERTICALLY nearest child, not the first one, so scripted tests must reach a node with `/` search rather than spatial keys. `j`/`k` move between siblings. `j` on a single child does nothing (same y as parent).
 - `listToMap` turns tabs into two spaces before computing depth. Never detect anything by space count; body lines use the `> ` sigil.
 - Node ids from `listToMap` are sequential from 2 in file order, so tests address nodes by id. Node 0 is the hidden super-root; a file with several top-level lines gets a synthetic `root` node 1.
 - `Serialize` ends with exactly one newline (the PHP v1 wrote a trailing blank line; files saved by v1 lose it once).
