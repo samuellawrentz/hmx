@@ -492,7 +492,10 @@ func (a *App) readline(title string) (string, bool) {
 	cursor := len(buf)
 	w, _ := a.s.Size()
 	shift := adjustShift(0, cursor, w)
-	a.showLine(buf, cursor, shift)
+	queryStart := -1 // index in buf just after "[[", -1 = popup closed
+	var all, cands []Candidate
+	sel := 0
+	a.showLine(buf, cursor, shift, cands, sel)
 
 	for {
 		ev, ok := a.s.PollEvent().(*tcell.EventKey)
@@ -502,14 +505,39 @@ func (a *App) readline(title string) (string, bool) {
 		mod := ev.Modifiers()
 		switch ev.Key() {
 		case tcell.KeyEsc:
+			if queryStart >= 0 {
+				queryStart, cands = -1, nil
+				a.draw()
+				a.showLine(buf, cursor, shift, nil, 0)
+				continue
+			}
 			a.draw()
 			return "", false
 		case tcell.KeyEnter:
+			if queryStart >= 0 && len(cands) > 0 {
+				ins := []rune(cands[sel].Insert)
+				buf = append(append(append([]rune{}, buf[:queryStart-2]...), ins...), buf[cursor:]...)
+				cursor = queryStart - 2 + len(ins)
+				queryStart, cands = -1, nil
+				break
+			}
 			return strings.TrimSpace(string(buf)), true
-		case tcell.KeyUp, tcell.KeyHome, tcell.KeyCtrlA:
+		case tcell.KeyHome, tcell.KeyCtrlA:
 			cursor = 0
-		case tcell.KeyDown, tcell.KeyEnd, tcell.KeyCtrlE:
+		case tcell.KeyUp, tcell.KeyCtrlP:
+			if queryStart >= 0 {
+				sel = max(sel-1, 0)
+			} else {
+				cursor = 0
+			}
+		case tcell.KeyEnd, tcell.KeyCtrlE:
 			cursor = len(buf)
+		case tcell.KeyDown, tcell.KeyCtrlN:
+			if queryStart >= 0 {
+				sel = min(sel+1, len(cands)-1)
+			} else {
+				cursor = len(buf)
+			}
 		case tcell.KeyRight:
 			if mod&tcell.ModCtrl != 0 {
 				cursor = wordRight(buf, cursor)
@@ -552,6 +580,13 @@ func (a *App) readline(title string) (string, bool) {
 			buf = buf[cursor:]
 			cursor = 0
 		case tcell.KeyTab:
+			if queryStart >= 0 && len(cands) > 0 {
+				ins := []rune(cands[sel].Insert)
+				buf = append(append(append([]rune{}, buf[:queryStart-2]...), ins...), buf[cursor:]...)
+				cursor = queryStart - 2 + len(ins)
+				queryStart, cands = -1, nil
+				break
+			}
 			buf = rlInsert(buf, cursor, []rune("  "))
 			cursor += 2
 		case tcell.KeyRune:
@@ -571,13 +606,31 @@ func (a *App) readline(title string) (string, bool) {
 				cursor++
 			}
 		}
+		queryStart, all, cands = updateCompletion(a, buf, cursor, queryStart, all)
+		sel = max(0, min(sel, len(cands)-1))
 		w, _ = a.s.Size()
 		shift = adjustShift(shift, cursor, w)
-		a.showLine(buf, cursor, shift)
+		a.showLine(buf, cursor, shift, cands, sel)
 	}
 }
 
-func (a *App) showLine(buf []rune, cursor, shift int) {
+// updateCompletion opens the popup when "[[" lands before the cursor, closes it on "]" or when
+// the cursor leaves the query, and refilters otherwise.
+func updateCompletion(a *App, buf []rune, cursor, queryStart int, all []Candidate) (int, []Candidate, []Candidate) {
+	if queryStart < 0 {
+		if cursor >= 2 && buf[cursor-1] == '[' && buf[cursor-2] == '[' {
+			all = linkCandidates(a.mapDir)
+			return cursor, all, filterCandidates(all, "")
+		}
+		return -1, all, nil
+	}
+	if cursor < queryStart || strings.Contains(string(buf[queryStart:cursor]), "]") {
+		return -1, all, nil
+	}
+	return queryStart, all, filterCandidates(all, string(buf[queryStart:cursor]))
+}
+
+func (a *App) showLine(buf []rune, cursor, shift int, cands []Candidate, sel int) {
 	w, h := a.s.Size()
 	for i := 0; i < w; i++ {
 		r := ' '
@@ -590,7 +643,34 @@ func (a *App) showLine(buf []rune, cursor, shift int) {
 		}
 		a.s.SetContent(i, h-1, r, nil, st)
 	}
+	drawCompletion(a, cands, sel, w, h)
 	a.s.Show()
+}
+
+// drawCompletion renders up to 8 candidate rows directly above the edit line,
+// title left-aligned, context right-aligned and dim, the selected row in styleActive.
+func drawCompletion(a *App, cands []Candidate, sel, w, h int) {
+	if len(cands) == 0 || h < 4 {
+		return
+	}
+	n := min(len(cands), 8)
+	for i := 0; i < n; i++ {
+		y := h - 2 - i
+		title, ctx := []rune(cands[i].Title), []rune(cands[i].Context)
+		titleW := max(0, w-len(ctx)-2)
+		if len(title) > titleW {
+			title = title[:titleW]
+		}
+		st, ctxSt := tcell.StyleDefault, tcell.StyleDefault.Dim(true)
+		if i == sel {
+			st, ctxSt = styleActive, styleActive
+		}
+		for x := 0; x < w; x++ {
+			a.s.SetContent(x, y, ' ', nil, st)
+		}
+		putStr(a.s, 0, y, string(title), st)
+		putStr(a.s, w-len(ctx), y, string(ctx), ctxSt)
+	}
 }
 
 func adjustShift(shift, cursor, w int) int {

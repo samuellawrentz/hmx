@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2), 10 scenarios
+# TUI smoke: $HMX_BIN (default ./hmx; "php ref/hmx.php" = reference) inside tmux, send keys, assert on captured text (testing.md §2), 11 scenarios
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 bin="${HMX_BIN:-./hmx}"
@@ -100,6 +100,21 @@ move_children()
 	screen | awk '/Service ownership matrix update/{f=1} f && /Schema migration checklist/{found=1} END{exit !found}'
 }
 
+# [[ in the inline editor opens the link popup; Enter accepts the highlighted candidate, a second Enter commits
+link_complete()
+{
+	keys l
+	keys o
+	tmux send-keys -t hmxtest -l '[['; sleep 0.4   # send-keys treats "[[" specially; -l forces literal
+	sleep 0.3
+	has infra || return 1        # a candidate row is visible
+	keys i n
+	sleep 0.3
+	keys Enter                   # accept the candidate
+	keys Enter                   # commit the node
+	has '[['
+}
+
 # t opens the task picker on the active node; Enter links the top (most urgent) task
 task_picker()
 {
@@ -121,6 +136,7 @@ EDITOR="sh -c 'printf \"\\nadded line\\n\" >> \"\$0\"'" run body_edit backend.hm
 run no_map_dir      ''          no_map_dir /new
 run expand_collapse backend.hmm expand_collapse
 run move_children   deep.hmm    move_children
+run link_complete   backend.hmm link_complete
 
 FAKE_TASK=$(mktemp -d)
 printf '[{"uuid":"aaaaaaaa-0000-0000-0000-000000000000","description":"write spec","project":"hmx","urgency":3.1},

@@ -59,6 +59,20 @@ bottom pane shows the body when the active node has one.
 | `q` | back to list, saves if modified |
 | `?` | help |
 
+### Link autocomplete
+Typing `[[` while the inline editor is open (`e`, `o`, `Tab`) opens a filter popup above the edit line.
+Candidates are every non-body line of every map in `map_dir`, scanned once per popup: the root line inserts
+`[[map]]` and shows `map` as its context, deeper lines insert `[[map#title]]` and show the ancestor path
+(`projects › Q3`). Maps come in list-screen order, their nodes in file order.
+Typing filters by subsequence over title and context (`q3 red` finds `reduce cx cost` under `projects › Q3`).
+
+| key | action |
+|---|---|
+| any rune, backspace | edit the line and refilter |
+| `ctrl+n` ↓ / `ctrl+p` ↑ | next / previous candidate |
+| `Tab` `Enter` | accept, inserting the whole link |
+| `Esc` | close the popup, keep what was typed |
+
 ## Links
 - Syntax: `[[map]]`, `[[map#node title]]`. Looked up in the title first, then body, first match wins.
 - Follow: push `{file, active_node, viewport}`, save if modified, load target.
