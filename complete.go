@@ -7,7 +7,21 @@ import (
 )
 
 // Candidate is one completable link target: a map root or a node inside a map.
-type Candidate struct{ Title, Context, Insert string }
+type Candidate struct {
+	Map, Path, Title, Insert string // Path = ancestor titles below the root, " › " joined, "" at depth 0 and 1
+	Node                     bool   // false for the map's root line
+}
+
+// Context is the dim right-hand column: "map" for a root line, else the map name plus the ancestor path.
+func (c Candidate) Context() string {
+	if !c.Node {
+		return "map"
+	}
+	if c.Path == "" {
+		return c.Map
+	}
+	return c.Map + " › " + c.Path
+}
 
 var bodyLineRe = regexp.MustCompile(`^\t*> `)
 
@@ -32,14 +46,14 @@ func linkCandidates(dir string) []Candidate {
 			stack = append(stack[:min(depth, len(stack))], title)
 
 			if depth == 0 {
-				out = append(out, Candidate{Title: title, Context: "map", Insert: "[[" + r.Name + "]]"})
+				out = append(out, Candidate{Map: r.Name, Title: title, Insert: "[[" + r.Name + "]]"})
 				continue
 			}
-			ctx := r.Name
+			path := ""
 			if depth > 1 {
-				ctx = r.Name + " › " + strings.Join(stack[1:depth], " › ")
+				path = strings.Join(stack[1:depth], " › ")
 			}
-			out = append(out, Candidate{Title: title, Context: ctx, Insert: "[[" + r.Name + "#" + title + "]]"})
+			out = append(out, Candidate{Map: r.Name, Path: path, Title: title, Insert: "[[" + r.Name + "#" + title + "]]", Node: true})
 		}
 	}
 	return out
@@ -63,19 +77,32 @@ func fuzzyMatch(q, s string) bool {
 	return false
 }
 
-// filterCandidates keeps candidates whose "Title Context" fuzzy-matches every whitespace-separated
-// term of q, in source order. Per term, so "q3 red" finds a title under a matching ancestor path.
+// allTermsMatch reports whether every whitespace-separated term of q is a fuzzy subsequence of hay.
+func allTermsMatch(q, hay string) bool {
+	for _, term := range strings.Fields(q) {
+		if !fuzzyMatch(term, hay) {
+			return false
+		}
+	}
+	return true
+}
+
+// filterCandidates keeps candidates matching every whitespace-separated term of q, in source order.
+// "#" scopes the query to one map: the left side matches the map name, the right side matches the
+// node's path+title, and only node rows survive (a map row has no "[[map#]]" form). Without "#",
+// the match is against "Context() Title", so a query can mix a context term with a title term.
 func filterCandidates(all []Candidate, q string) []Candidate {
 	var out []Candidate
+	scope, rest, hasHash := strings.Cut(q, "#")
 	for _, c := range all {
-		hay := c.Title + " " + c.Context
-		ok := true
-		for _, term := range strings.Fields(q) {
-			ok = ok && fuzzyMatch(term, hay)
+		if hasHash {
+			if !c.Node || !allTermsMatch(scope, c.Map) || !allTermsMatch(rest, strings.TrimSpace(c.Path+" "+c.Title)) {
+				continue
+			}
+		} else if !allTermsMatch(q, c.Context()+" "+c.Title) {
+			continue
 		}
-		if ok {
-			out = append(out, c)
-		}
+		out = append(out, c)
 	}
 	return out
 }

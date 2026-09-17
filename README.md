@@ -79,7 +79,8 @@ One `.hmm` per map, readable by upstream h-m-m and by `cat`:
 - `[[map#node title]]` lands on that node (exact title, else substring).
 - `[[task:uuid8]]` marks a Taskwarrior task by the first 8 characters of its uuid.
 - Typing `[[` while editing a title opens a completion popup over every node of every map; arrows or `ctrl+n`/`ctrl+p` move, `Tab` or `Enter` inserts the finished link, `Esc` closes it.
-- The popup filters by subsequence over the title and its ancestor path, so `q3 red` finds `reduce cx cost` under `projects › Q3`.
+- The popup filters by subsequence over the ancestor path and the title, one term at a time, so `projects red` finds `reduce cx cost` under `projects › Q3`.
+- `#` scopes the query: `projects#` lists that map's nodes, `proj#red` narrows them. Accepting inserts the whole link, so typing `#` yourself never doubles it.
 
 ## Taskwarrior
 When a map opens, hmx runs one `task rc.context=none <uuids> export` for every `[[task:uuid8]]` in it and renders `☐` pending, `☑` done, red when overdue. Enter on such a node shows `task <uuid> info` in `$PAGER`. Without a `task` binary everything renders as plain `☐`.

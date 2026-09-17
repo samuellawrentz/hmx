@@ -656,7 +656,7 @@ func drawCompletion(a *App, cands []Candidate, sel, w, h int) {
 	n := min(len(cands), 8)
 	for i := 0; i < n; i++ {
 		y := h - 2 - i
-		title, ctx := []rune(cands[i].Title), []rune(cands[i].Context)
+		title, ctx := []rune(cands[i].Title), []rune(cands[i].Context())
 		titleW := max(0, w-len(ctx)-2)
 		if len(title) > titleW {
 			title = title[:titleW]

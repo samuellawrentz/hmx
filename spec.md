@@ -64,7 +64,11 @@ Typing `[[` while the inline editor is open (`e`, `o`, `Tab`) opens a filter pop
 Candidates are every non-body line of every map in `map_dir`, scanned once per popup: the root line inserts
 `[[map]]` and shows `map` as its context, deeper lines insert `[[map#title]]` and show the ancestor path
 (`projects › Q3`). Maps come in list-screen order, their nodes in file order.
-Typing filters by subsequence over title and context (`q3 red` finds `reduce cx cost` under `projects › Q3`).
+Typing filters by subsequence, one whitespace-separated term at a time, over the context and then the title,
+so `projects red` and `q3 red` both find `reduce cx cost` under `projects › Q3`.
+`#` scopes the query: the left side picks maps, the right side picks nodes inside them, and map rows drop out.
+`projects#` lists every node of that map in file order; `proj#red` lands on `reduce cx cost`.
+Accepting always inserts the whole `[[map#title]]`, so typing `#` yourself never doubles the separator.
 
 | key | action |
 |---|---|

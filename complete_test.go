@@ -51,17 +51,17 @@ func TestLinkCandidates(t *testing.T) {
 	}
 
 	root, ok := findCand(all, "projects")
-	if !ok || root.Context != "map" || root.Insert != "[[projects]]" {
+	if !ok || root.Node || root.Context() != "map" || root.Insert != "[[projects]]" {
 		t.Errorf("map row = %+v", root)
 	}
 
 	q3, ok := findCand(all, "Q3")
-	if !ok || q3.Context != "projects" || q3.Insert != "[[projects#Q3]]" {
+	if !ok || !q3.Node || q3.Path != "" || q3.Context() != "projects" || q3.Insert != "[[projects#Q3]]" {
 		t.Errorf("depth-1 row = %+v", q3)
 	}
 
 	leaf, ok := findCand(all, "reduce cx cost")
-	if !ok || leaf.Context != "projects › Q3 › Cost review" || leaf.Insert != "[[projects#reduce cx cost]]" {
+	if !ok || !leaf.Node || leaf.Path != "Q3 › Cost review" || leaf.Context() != "projects › Q3 › Cost review" || leaf.Insert != "[[projects#reduce cx cost]]" {
 		t.Errorf("depth-3 row = %+v", leaf)
 	}
 }
@@ -96,6 +96,31 @@ func TestFilterCandidates(t *testing.T) {
 
 	if got := filterCandidates(all, ""); len(got) != len(all) {
 		t.Error("empty query keeps everything")
+	}
+}
+
+// TestFilterCandidatesScope covers "#" as a map-scope separator: left of "#" filters the map,
+// right of "#" filters node path+title, and only node rows (never map rows) survive.
+func TestFilterCandidatesScope(t *testing.T) {
+	d := completeDir(t)
+	all := linkCandidates(d)
+
+	scoped := filterCandidates(all, "projects#")
+	if len(scoped) != 4 { // Q3, Cost review, reduce cx cost, Q4 goals
+		t.Errorf("projects# count = %d, want 4: %+v", len(scoped), scoped)
+	}
+	for _, c := range scoped {
+		if !c.Node {
+			t.Errorf("projects# returned a map row: %+v", c)
+		}
+	}
+
+	if _, ok := findCand(filterCandidates(all, "proj#red"), "reduce cx cost"); !ok {
+		t.Error("proj#red should resolve to reduce cx cost")
+	}
+
+	if _, ok := findCand(filterCandidates(all, "projects red"), "reduce cx cost"); !ok {
+		t.Error("projects red (no #, map name first) should still match reduce cx cost")
 	}
 }
 
@@ -134,6 +159,24 @@ func TestLinkComplete(t *testing.T) {
 	s.InjectKey(tcell.KeyEnter, 0, 0)
 	if got, ok := a.readline(""); !ok || got != "[[ab" {
 		t.Errorf("esc keeps typed text: got %q, %v", got, ok)
+	}
+
+	// "[[proj#red" is longer than the simscreen event buffer (10), so drain concurrently
+	// with injection instead of shrinking the string.
+	type result struct {
+		s  string
+		ok bool
+	}
+	ch := make(chan result, 1)
+	go func() {
+		got, ok := a.readline("")
+		ch <- result{got, ok}
+	}()
+	injectStr(s, "[[proj#red")
+	s.InjectKey(tcell.KeyEnter, 0, 0)
+	s.InjectKey(tcell.KeyEnter, 0, 0)
+	if r := <-ch; !r.ok || r.s != "[[projects#reduce cx cost]]" {
+		t.Errorf("typed # is not doubled: got %q, %v", r.s, r.ok)
 	}
 }
 

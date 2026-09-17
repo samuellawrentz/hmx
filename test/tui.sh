@@ -3,10 +3,11 @@
 set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 bin="${HMX_BIN:-./hmx}"
+sess="hmxtest$$"   # unique per run: a concurrent suite on this machine must not share the session
 status=0
 
-keys() { tmux send-keys -t hmxtest "$@"; sleep 0.4; }
-screen() { tmux capture-pane -t hmxtest -p; }
+keys() { tmux send-keys -t "$sess" "$@"; sleep 0.4; }
+screen() { tmux capture-pane -t "$sess" -p; }
 has() { local s; s=$(screen); for n in "$@"; do grep -qF -- "$n" <<<"$s" || { echo "  missing: $n"; echo "$s"; return 1; }; done; }
 lacks() { screen | grep -qF -- "$1" && { echo "  unexpected: $1"; return 1; }; return 0; }
 
@@ -14,11 +15,11 @@ lacks() { screen | grep -qF -- "$1" && { echo "  unexpected: $1"; return 1; }; r
 run()
 {
 	local d; d=$(mktemp -d); cp "$repo"/test/fixtures/*.hmm "$d/"
-	tmux kill-session -t hmxtest 2>/dev/null
-	tmux new-session -d -c "$repo" -s hmxtest -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }${FAKE_TASK:+PATH=$FAKE_TASK:\$PATH }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
+	tmux kill-session -t "$sess" 2>/dev/null
+	tmux new-session -d -c "$repo" -s "$sess" -x 100 -y 30 "${EDITOR:+EDITOR=$(printf '%q' "$EDITOR") }${FAKE_TASK:+PATH=$FAKE_TASK:\$PATH }$bin --map-dir=$d${4:-} ${2:+$d/$2}"
 	for _ in $(seq 50); do screen | grep -q '[^[:space:]]' && break; sleep 0.1; done   # first exec of a fresh build is slow on macOS
 	if "$3" "$d"; then echo "PASS $1"; else echo "FAIL $1"; status=1; fi
-	tmux kill-session -t hmxtest 2>/dev/null
+	tmux kill-session -t "$sess" 2>/dev/null
 }
 
 open_map() { has backend auth '[[infra#redis]]'; }
@@ -105,7 +106,7 @@ link_complete()
 {
 	keys l
 	keys o
-	tmux send-keys -t hmxtest -l '[['; sleep 0.4   # send-keys treats "[[" specially; -l forces literal
+	tmux send-keys -t "$sess" -l '[['; sleep 0.4   # send-keys treats "[[" specially; -l forces literal
 	sleep 0.3
 	has infra || return 1        # a candidate row is visible
 	keys i n
