@@ -15,8 +15,11 @@ Go + tcell port of h-m-m: one `package main`, flat files, one `App` struct, `act
 - `Serialize` ends with exactly one newline (the PHP v1 wrote a trailing blank line; files saved by v1 lose it once).
 - Layout goldens in `test/golden/` are frozen 120x40 captures of the PHP v1 (`test/golden/gen.sh`, private tmux socket with the status bar off because `tmux -y N` gives an N-1 row pane). The PHP reference lives in git history: `git show php-ref:ref/hmx.php`. Never regenerate goldens from Go.
 - `readline` (inline editor), the list screen, prompts, and `$EDITOR` round-trips are unit-tested through `tcell.NewSimulationScreen` + `InjectKey`; `Suspend`/`Resume` are no-ops there.
+  Its event channel holds 10 events: inject longer key sequences from a goroutine while the blocking call drains them, or the test deadlocks.
 - Anything interactive (`$EDITOR`, `task … info | $PAGER`) runs between `screen.Suspend()` and `Resume()` with os.Stdin/Stdout.
+- Taskwarrior tests must never reach the real `task` on PATH (this machine has one, with the user's real database). Always `t.Setenv("PATH", tmpdir)` with a fake `task` script, as `tasks_test.go` does.
 - Clipboard: yank/cut pipe to `pbcopy`, paste reads `pbpaste`; internal string when `pbcopy` is not on PATH. Tests put fake scripts on PATH and must use absolute `/bin/cat` inside them.
 - `insertNewSibling` shows `NEW` in the tree while the inline editor is open; tui asserts on that.
 - macOS has no `timeout`; smoke tests use tmux (`send-keys`, `capture-pane -p`). `run()` polls until the screen is non-blank because the first exec of a fresh build is slow.
+- `test/tui.sh` names its tmux session per run (`hmxtest$$`). Never hardcode one: a second suite running concurrently drives and captures the same pane, and both runs then fail random unrelated scenarios with `missing: <text>`.
 - Manual smoke: `tmux new -d -s t -x 120 -y 30 "./hmx --map-dir=/tmp/x /tmp/x/file.hmm"; tmux capture-pane -t t -p`. Never point it at `test/fixtures/` directly: `q` saves.
