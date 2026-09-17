@@ -66,6 +66,8 @@ Candidates are every non-body line of every map in `map_dir`, scanned once per p
 (`projects › Q3`). Maps come in list-screen order, their nodes in file order.
 Typing filters by subsequence, one whitespace-separated term at a time, over the context and then the title,
 so `projects red` and `q3 red` both find `reduce cx cost` under `projects › Q3`.
+Matches are ranked: exact title, then title prefix, substring, subsequence, and last the ones that matched
+only through their ancestor path. Equal ranks keep source order.
 `#` scopes the query: the left side picks maps, the right side picks nodes inside them, and map rows drop out.
 `projects#` lists every node of that map in file order; `proj#red` lands on `reduce cx cost`.
 Accepting always inserts the whole `[[map#title]]`, so typing `#` yourself never doubles the separator.

@@ -647,20 +647,21 @@ func (a *App) showLine(buf []rune, cursor, shift int, cands []Candidate, sel int
 	a.s.Show()
 }
 
-// drawCompletion renders up to 8 candidate rows directly above the edit line,
-// title left-aligned, context right-aligned and dim, the selected row in styleActive.
+// drawCompletion renders up to 8 candidate rows directly above the edit line, title left-aligned
+// (truncated from the right), context right-aligned and dim, capped at 2/5 of the width and
+// truncated from the LEFT so the deepest ancestors survive, selected row in styleActive. Every row
+// writes exactly w cells and never starts a putStr at a negative x.
 func drawCompletion(a *App, cands []Candidate, sel, w, h int) {
 	if len(cands) == 0 || h < 4 {
 		return
 	}
 	n := min(len(cands), 8)
+	ctxMax := w * 2 / 5
 	for i := 0; i < n; i++ {
 		y := h - 2 - i
-		title, ctx := []rune(cands[i].Title), []rune(cands[i].Context())
-		titleW := max(0, w-len(ctx)-2)
-		if len(title) > titleW {
-			title = title[:titleW]
-		}
+		ctx := truncLeft([]rune(cands[i].Context()), ctxMax)
+		title := truncRight([]rune(cands[i].Title), max(0, w-len(ctx)-2))
+
 		st, ctxSt := tcell.StyleDefault, tcell.StyleDefault.Dim(true)
 		if i == sel {
 			st, ctxSt = styleActive, styleActive
@@ -669,8 +670,30 @@ func drawCompletion(a *App, cands []Candidate, sel, w, h int) {
 			a.s.SetContent(x, y, ' ', nil, st)
 		}
 		putStr(a.s, 0, y, string(title), st)
-		putStr(a.s, w-len(ctx), y, string(ctx), ctxSt)
+		putStr(a.s, max(0, w-len(ctx)), y, string(ctx), ctxSt)
 	}
+}
+
+// truncLeft keeps at most limit runes of s, dropping from the front and prefixing "…" when cut.
+func truncLeft(s []rune, limit int) []rune {
+	if limit <= 0 {
+		return nil
+	}
+	if len(s) <= limit {
+		return s
+	}
+	return append([]rune{'…'}, s[len(s)-limit+1:]...)
+}
+
+// truncRight keeps at most limit runes of s, dropping from the back and appending "…" when cut.
+func truncRight(s []rune, limit int) []rune {
+	if limit <= 0 {
+		return nil
+	}
+	if len(s) <= limit {
+		return s
+	}
+	return append(append([]rune{}, s[:limit-1]...), '…')
 }
 
 func adjustShift(shift, cursor, w int) int {

@@ -124,6 +124,49 @@ func TestFilterCandidatesScope(t *testing.T) {
 	}
 }
 
+// TestCandScoreTiers locks the tier order so a refactor cannot silently flip prefix and substring.
+func TestCandScoreTiers(t *testing.T) {
+	q := "plan"
+	exact := Candidate{Title: "plan"}
+	prefix := Candidate{Title: "planning"}
+	substr := Candidate{Title: "the plan today"}
+	subseq := Candidate{Title: "please log a note"} // p,l,a,n in order, not contiguous
+	pathOnly := Candidate{Title: "unrelated"}
+
+	if !(candScore(exact, q) > candScore(prefix, q)) {
+		t.Error("exact should outrank prefix")
+	}
+	if !(candScore(prefix, q) > candScore(substr, q)) {
+		t.Error("prefix should outrank substring")
+	}
+	if !(candScore(substr, q) > candScore(subseq, q)) {
+		t.Error("substring should outrank subsequence")
+	}
+	if !(candScore(subseq, q) > candScore(pathOnly, q)) {
+		t.Error("subsequence should outrank a candidate that only matched via the path")
+	}
+}
+
+// TestFilterCandidatesRanking reproduces the deep.hmm bug: a short title beats a long ancestor
+// path that only happens to contain the query letters as a scattered subsequence.
+func TestFilterCandidatesRanking(t *testing.T) {
+	all := []Candidate{
+		{Map: "deep", Path: "Backend services roadmap and integration touchpoints for release › API contract review", Title: "Schema migration checklist", Node: true},
+		{Map: "deep", Path: "Backend services roadmap and integration touchpoints for release › API contract review", Title: "Rate limit tuning notes", Node: true},
+		{Map: "week", Title: "planning", Node: true},
+	}
+	got := filterCandidates(all, "plan")
+	if len(got) != 3 {
+		t.Fatalf("all three should still match, got %+v", got)
+	}
+	if got[0].Title != "planning" {
+		t.Errorf("plan should rank planning first, got %+v", got)
+	}
+	if _, ok := findCand(got, "Schema migration checklist"); !ok {
+		t.Error("the long-path node should still be present, just ranked lower")
+	}
+}
+
 func injectStr(s tcell.SimulationScreen, str string) {
 	for _, r := range str {
 		s.InjectKey(tcell.KeyRune, r, 0)
@@ -199,5 +242,43 @@ func TestShowLinePopup(t *testing.T) {
 	}
 	if !strings.HasPrefix(lines[h-1], "[[") {
 		t.Errorf("edit line changed: %q", lines[h-1])
+	}
+}
+
+// TestDrawCompletionTruncatesLongContext reproduces the corruption bug: a context longer than the
+// row must be truncated (never given a negative x) instead of bleeding onto the row above.
+func TestDrawCompletionTruncatesLongContext(t *testing.T) {
+	long := Candidate{
+		Map:   "deep",
+		Path:  "Backend services roadmap and integration touchpoints for release › API contract review",
+		Title: "Schema migration checklist",
+		Node:  true,
+	}
+	for _, wh := range [][2]int{{100, 30}, {30, 10}} {
+		w, h := wh[0], wh[1]
+		s := tcell.NewSimulationScreen("")
+		s.Init()
+		s.SetSize(w, h)
+		a := &App{s: s}
+
+		above := h - 3 // one row above the single popup row (topmost popup row is h-2)
+		putStr(s, 0, above, "SENTINEL", tcell.StyleDefault)
+
+		a.showLine([]rune("[["), 2, 0, []Candidate{long}, 0)
+
+		lines := strings.Split(screenText(s), "\n")
+		if !strings.Contains(lines[above], "SENTINEL") {
+			t.Errorf("w=%d: row above the popup was corrupted: %q", w, lines[above])
+		}
+		if strings.Contains(lines[above], "›") {
+			t.Errorf("w=%d: context bled onto the row above: %q", w, lines[above])
+		}
+		popup := []rune(lines[h-2])
+		if len(popup) != w {
+			t.Errorf("w=%d: popup row width = %d, want %d", w, len(popup), w)
+		}
+		if !strings.Contains(string(popup), "…") {
+			t.Errorf("w=%d: truncated context should carry a leading …: %q", w, string(popup))
+		}
 	}
 }

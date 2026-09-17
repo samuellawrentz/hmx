@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -87,13 +88,38 @@ func allTermsMatch(q, hay string) bool {
 	return true
 }
 
-// filterCandidates keeps candidates matching every whitespace-separated term of q, in source order.
-// "#" scopes the query to one map: the left side matches the map name, the right side matches the
-// node's path+title, and only node rows survive (a map row has no "[[map#]]" form). Without "#",
-// the match is against "Context() Title", so a query can mix a context term with a title term.
+// candScore ranks a surviving candidate against q for display order only; it never decides which
+// candidates survive filterCandidates. Higher is better: an exact title match, then a title prefix,
+// then a title substring, then a title subsequence, then a candidate that only matched via the path.
+func candScore(c Candidate, q string) int {
+	q = strings.ToLower(strings.TrimSpace(q))
+	title := strings.ToLower(c.Title)
+	switch {
+	case title == q:
+		return 4
+	case strings.HasPrefix(title, q):
+		return 3
+	case strings.Contains(title, q):
+		return 2
+	case fuzzyMatch(q, title):
+		return 1
+	default:
+		return 0
+	}
+}
+
+// filterCandidates keeps candidates matching every whitespace-separated term of q, then ranks the
+// survivors by candScore (source order breaks ties). "#" scopes the query to one map: the left side
+// matches the map name, the right side matches the node's path+title, and only node rows survive (a
+// map row has no "[[map#]]" form). Without "#", the match is against "Context() Title", so a query
+// can mix a context term with a title term.
 func filterCandidates(all []Candidate, q string) []Candidate {
 	var out []Candidate
 	scope, rest, hasHash := strings.Cut(q, "#")
+	scoreQ := q
+	if hasHash {
+		scoreQ = rest
+	}
 	for _, c := range all {
 		if hasHash {
 			if !c.Node || !allTermsMatch(scope, c.Map) || !allTermsMatch(rest, strings.TrimSpace(c.Path+" "+c.Title)) {
@@ -104,5 +130,6 @@ func filterCandidates(all []Candidate, q string) []Candidate {
 		}
 		out = append(out, c)
 	}
+	sort.SliceStable(out, func(i, j int) bool { return candScore(out[i], scoreQ) > candScore(out[j], scoreQ) })
 	return out
 }
